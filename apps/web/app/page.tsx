@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { CalendarIcon, SearchIcon, SettingsIcon, UserIcon } from "lucide-react";
 import { useForm } from "react-hook-form";
+import ConnectButton from "@/components/ConnectButton";
 
 // Import all components
 import { Button } from "@workspace/ui/components/button";
@@ -89,6 +90,9 @@ export default function Page() {
           <p className="text-muted-foreground text-lg">
             A comprehensive demonstration of all available UI components
           </p>
+          <div className="flex justify-center">
+            <ConnectButton />
+          </div>
         </div>
 
         <Separator />

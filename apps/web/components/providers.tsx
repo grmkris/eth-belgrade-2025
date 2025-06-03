@@ -2,17 +2,26 @@
 
 import * as React from "react";
 import { ThemeProvider as NextThemesProvider } from "next-themes";
+import { WalletProvider } from "@/lib/WalletProvider";
 
-export function Providers({ children }: { children: React.ReactNode }) {
+export function Providers({ 
+  children, 
+  cookies 
+}: { 
+  children: React.ReactNode;
+  cookies: string | null;
+}) {
   return (
-    <NextThemesProvider
-      attribute="class"
-      defaultTheme="system"
-      enableSystem
-      disableTransitionOnChange
-      enableColorScheme
-    >
-      {children}
-    </NextThemesProvider>
+    <WalletProvider cookies={cookies}>
+      <NextThemesProvider
+        attribute="class"
+        defaultTheme="system"
+        enableSystem
+        disableTransitionOnChange
+        enableColorScheme
+      >
+        {children}
+      </NextThemesProvider>
+    </WalletProvider>
   );
-}
+} 
