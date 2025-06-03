@@ -1,437 +1,219 @@
 "use client";
 
 import { useState } from "react";
-import { CalendarIcon, SearchIcon, SettingsIcon, UserIcon } from "lucide-react";
-import { useForm } from "react-hook-form";
-import ConnectButton from "@/components/ConnectButton";
-
-// Import all components
+import { motion, AnimatePresence } from "motion/react";
+import { MessageCircleIcon, HeartIcon, EyeIcon, HomeIcon } from "lucide-react";
 import { Button } from "@workspace/ui/components/button";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@workspace/ui/components/accordion";
-import { Calendar } from "@workspace/ui/components/calendar";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-  CardAction,
-} from "@workspace/ui/components/card";
-import { Checkbox } from "@workspace/ui/components/checkbox";
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@workspace/ui/components/form";
-import { Input } from "@workspace/ui/components/input";
-import { Label } from "@workspace/ui/components/label";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@workspace/ui/components/popover";
-import {
-  RadioGroup,
-  RadioGroupItem,
-} from "@workspace/ui/components/radio-group";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@workspace/ui/components/select";
-import { Separator } from "@workspace/ui/components/separator";
-import { Switch } from "@workspace/ui/components/switch";
-import { Textarea } from "@workspace/ui/components/textarea";
-import { Toggle } from "@workspace/ui/components/toggle";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@workspace/ui/components/tooltip";
+import Landing from "@/components/Landing";
+import Chat from "@/components/Chat";
+import Donate from "@/components/Donate";
+import Ledger from "@/components/Ledger";
+
+const navItems = [
+  { id: "home", label: "Home", icon: HomeIcon },
+  { id: "chat", label: "Chat", icon: MessageCircleIcon },
+  { id: "donate", label: "Donate", icon: HeartIcon },
+  { id: "transparency", label: "Transparency", icon: EyeIcon },
+];
+
+const pageVariants = {
+  initial: { opacity: 0, x: 20 },
+  in: { opacity: 1, x: 0 },
+  out: { opacity: 0, x: -20 },
+};
+
+const pageTransition = {
+  type: "tween",
+  ease: "anticipate",
+  duration: 0.5,
+};
 
 export default function Page() {
-  const [date, setDate] = useState<Date>();
-  const [switchChecked, setSwitchChecked] = useState(false);
-  const [checkboxChecked, setCheckboxChecked] = useState(false);
-  const [togglePressed, setTogglePressed] = useState(false);
+  const [activeTab, setActiveTab] = useState("home");
 
-  const form = useForm({
-    defaultValues: {
-      username: "",
-      email: "",
-      bio: "",
-      notifications: true,
-      theme: "light",
-    },
-  });
-
-  const onSubmit = (data: any) => {
-    console.log(data);
+  const renderContent = () => {
+    switch (activeTab) {
+      case "home":
+        return <Landing />;
+      case "chat":
+        return <Chat />;
+      case "donate":
+        return <Donate />;
+      case "transparency":
+        return <Ledger />;
+      default:
+        return <Landing />;
+    }
   };
 
   return (
-    <div className="min-h-screen bg-background p-8">
-      <div className="max-w-6xl mx-auto space-y-12">
-        {/* Header */}
-        <div className="text-center space-y-4">
-          <h1 className="text-4xl font-bold">UI Components Showcase</h1>
-          <p className="text-muted-foreground text-lg">
-            A comprehensive demonstration of all available UI components
-          </p>
-          <div className="flex justify-center">
-            <ConnectButton />
-          </div>
-        </div>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+      {/* Navigation Header */}
+      <motion.header
+        initial={{ y: -100 }}
+        animate={{ y: 0 }}
+        transition={{ duration: 0.6, ease: "easeOut" }}
+        className="sticky top-0 z-50 bg-white/80 backdrop-blur-lg border-b border-gray-200 shadow-sm"
+      >
+        <div className="container mx-auto px-4">
+          <nav className="flex items-center justify-between h-16">
+            {/* Logo */}
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
+                <HeartIcon className="w-6 h-6 text-white" />
+              </div>
+              <span className="font-bold text-xl bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                Hope Connect
+              </span>
+            </div>
 
-        <Separator />
-
-        {/* Buttons Section */}
-        <section className="space-y-4">
-          <h2 className="text-2xl font-semibold">Buttons</h2>
-          <div className="flex flex-wrap gap-4">
-            <Button>Default</Button>
-            <Button variant="destructive">Destructive</Button>
-            <Button variant="outline">Outline</Button>
-            <Button variant="secondary">Secondary</Button>
-            <Button variant="ghost">Ghost</Button>
-            <Button variant="link">Link</Button>
-            <Button size="sm">Small</Button>
-            <Button size="lg">Large</Button>
-            <Button size="icon">
-              <SettingsIcon />
-            </Button>
-          </div>
-        </section>
-
-        <Separator />
-
-        {/* Form Components */}
-        <section className="space-y-6">
-          <h2 className="text-2xl font-semibold">Form Components</h2>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>User Profile Form</CardTitle>
-              <CardDescription>Update your profile information</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Form {...form}>
-                <form
-                  onSubmit={form.handleSubmit(onSubmit)}
-                  className="space-y-6"
+            {/* Navigation Tabs */}
+            <div className="hidden md:flex items-center gap-2 bg-gray-100 rounded-full p-1">
+              {navItems.map((item) => (
+                <Button
+                  key={item.id}
+                  variant={activeTab === item.id ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => setActiveTab(item.id)}
+                  className={`
+                    rounded-full px-4 py-2 transition-all duration-200
+                    ${activeTab === item.id 
+                      ? "bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg" 
+                      : "hover:bg-white/50"
+                    }
+                  `}
                 >
-                  <FormField
-                    control={form.control}
-                    name="username"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Username</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Enter your username" {...field} />
-                        </FormControl>
-                        <FormDescription>
-                          This is your public display name.
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                  <item.icon className="w-4 h-4 mr-2" />
+                  {item.label}
+                </Button>
+              ))}
+            </div>
 
-                  <FormField
-                    control={form.control}
-                    name="email"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Email</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="email"
-                            placeholder="Enter your email"
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+            {/* Mobile Menu */}
+            <div className="md:hidden flex items-center gap-2">
+              <select
+                value={activeTab}
+                onChange={(e) => setActiveTab(e.target.value)}
+                className="bg-gray-100 border-0 rounded-full px-4 py-2 text-sm font-medium"
+              >
+                {navItems.map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {item.label}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-                  <FormField
-                    control={form.control}
-                    name="bio"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Bio</FormLabel>
-                        <FormControl>
-                          <Textarea
-                            placeholder="Tell us about yourself"
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormDescription>
-                          Brief description about yourself.
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+            {/* CTA Button */}
+            <div className="hidden md:block">
+              <Button
+                onClick={() => setActiveTab("chat")}
+                className="rounded-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 shadow-lg hover:shadow-xl transition-all"
+              >
+                Get Support Now
+              </Button>
+            </div>
+          </nav>
+        </div>
+      </motion.header>
 
-                  <FormField
-                    control={form.control}
-                    name="theme"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Theme</FormLabel>
-                        <Select
-                          onValueChange={field.onChange}
-                          defaultValue={field.value}
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select a theme" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="light">Light</SelectItem>
-                            <SelectItem value="dark">Dark</SelectItem>
-                            <SelectItem value="system">System</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+      {/* Main Content */}
+      <main className="relative">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={activeTab}
+            initial="initial"
+            animate="in"
+            exit="out"
+            variants={pageVariants}
+            transition={pageTransition}
+          >
+            {renderContent()}
+          </motion.div>
+        </AnimatePresence>
+      </main>
 
-                  <div className="space-y-4">
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                        id="notifications"
-                        checked={checkboxChecked}
-                        onCheckedChange={(checked) =>
-                          setCheckboxChecked(
-                            checked === "indeterminate" ? false : checked,
-                          )
-                        }
-                      />
-                      <Label htmlFor="notifications">
-                        Enable notifications
-                      </Label>
-                    </div>
-
-                    <div className="flex items-center space-x-2">
-                      <Switch
-                        id="marketing"
-                        checked={switchChecked}
-                        onCheckedChange={setSwitchChecked}
-                      />
-                      <Label htmlFor="marketing">Marketing emails</Label>
-                    </div>
-                  </div>
-
-                  <div className="space-y-3">
-                    <Label>Preferred contact method</Label>
-                    <RadioGroup defaultValue="email">
-                      <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="email" id="email" />
-                        <Label htmlFor="email">Email</Label>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="phone" id="phone" />
-                        <Label htmlFor="phone">Phone</Label>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="sms" id="sms" />
-                        <Label htmlFor="sms">SMS</Label>
-                      </div>
-                    </RadioGroup>
-                  </div>
-
-                  <Button type="submit">Save Profile</Button>
-                </form>
-              </Form>
-            </CardContent>
-          </Card>
-        </section>
-
-        <Separator />
-
-        {/* Card Examples */}
-        <section className="space-y-4">
-          <h2 className="text-2xl font-semibold">Cards</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Simple Card</CardTitle>
-                <CardDescription>A basic card example</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p>
-                  This is the card content area where you can put any
-                  information.
-                </p>
-              </CardContent>
-              <CardFooter>
-                <Button>Action</Button>
-              </CardFooter>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Card with Action</CardTitle>
-                <CardDescription>Card with header action</CardDescription>
-                <CardAction>
-                  <Button variant="ghost" size="icon">
-                    <SettingsIcon />
-                  </Button>
-                </CardAction>
-              </CardHeader>
-              <CardContent>
-                <p>This card has an action button in the header.</p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Stats Card</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">1,234</div>
-                <p className="text-muted-foreground">Total users</p>
-              </CardContent>
-            </Card>
-          </div>
-        </section>
-
-        <Separator />
-
-        {/* Interactive Components */}
-        <section className="space-y-6">
-          <h2 className="text-2xl font-semibold">Interactive Components</h2>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {/* Calendar */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Calendar</CardTitle>
-                <CardDescription>Date picker component</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Calendar
-                  mode="single"
-                  selected={date}
-                  onSelect={setDate}
-                  className="rounded-md border"
-                />
-              </CardContent>
-            </Card>
-
-            {/* Accordion */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Accordion</CardTitle>
-                <CardDescription>Collapsible content sections</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Accordion type="single" collapsible>
-                  <AccordionItem value="item-1">
-                    <AccordionTrigger>What is React?</AccordionTrigger>
-                    <AccordionContent>
-                      React is a JavaScript library for building user
-                      interfaces, particularly web applications.
-                    </AccordionContent>
-                  </AccordionItem>
-                  <AccordionItem value="item-2">
-                    <AccordionTrigger>What is TypeScript?</AccordionTrigger>
-                    <AccordionContent>
-                      TypeScript is a programming language that adds static type
-                      definitions to JavaScript.
-                    </AccordionContent>
-                  </AccordionItem>
-                  <AccordionItem value="item-3">
-                    <AccordionTrigger>What is Tailwind CSS?</AccordionTrigger>
-                    <AccordionContent>
-                      Tailwind CSS is a utility-first CSS framework for rapidly
-                      building custom user interfaces.
-                    </AccordionContent>
-                  </AccordionItem>
-                </Accordion>
-              </CardContent>
-            </Card>
-          </div>
-        </section>
-
-        <Separator />
-
-        {/* Overlay Components */}
-        <section className="space-y-4">
-          <h2 className="text-2xl font-semibold">Overlay Components</h2>
-          <div className="flex flex-wrap gap-4 items-center">
-            {/* Popover */}
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="outline">Open Popover</Button>
-              </PopoverTrigger>
-              <PopoverContent>
-                <div className="space-y-2">
-                  <h4 className="font-medium">Popover Content</h4>
-                  <p className="text-sm text-muted-foreground">
-                    This is a popover with some content inside.
-                  </p>
-                  <div className="flex gap-2">
-                    <Button size="sm">Action</Button>
-                    <Button size="sm" variant="outline">
-                      Cancel
-                    </Button>
-                  </div>
-                </div>
-              </PopoverContent>
-            </Popover>
-
-            {/* Tooltip */}
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="outline">Hover for Tooltip</Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>This is a helpful tooltip</p>
-              </TooltipContent>
-            </Tooltip>
-
-            {/* Toggle */}
-            <Toggle
-              pressed={togglePressed}
-              onPressedChange={setTogglePressed}
-              aria-label="Toggle italic"
+      {/* Floating Action Buttons - Only show on non-chat pages */}
+      {activeTab !== "chat" && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5 }}
+          className="fixed bottom-6 right-6 flex flex-col gap-3"
+        >
+          {activeTab !== "donate" && (
+            <motion.div
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
             >
-              <UserIcon />
-            </Toggle>
+              <Button
+                onClick={() => setActiveTab("donate")}
+                size="lg"
+                className="rounded-full shadow-xl bg-gradient-to-r from-purple-500 to-blue-600 hover:from-purple-600 hover:to-blue-700"
+              >
+                <HeartIcon className="w-5 h-5 mr-2" />
+                Donate
+              </Button>
+            </motion.div>
+          )}
+          
+          <motion.div
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            <Button
+              onClick={() => setActiveTab("chat")}
+              size="lg"
+              className="rounded-full shadow-xl bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700"
+            >
+              <MessageCircleIcon className="w-5 h-5 mr-2" />
+              Start Chat
+            </Button>
+          </motion.div>
+        </motion.div>
+      )}
 
-            <Toggle variant="outline">
-              <SearchIcon />
-            </Toggle>
+      {/* Footer - Only show on home and transparency pages */}
+      {(activeTab === "home" || activeTab === "transparency") && (
+        <motion.footer
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.8 }}
+          className="border-t border-gray-200 bg-white/50 backdrop-blur-sm mt-12"
+        >
+          <div className="container mx-auto px-4 py-8">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+              <div className="text-center md:text-left">
+                <p className="text-sm text-gray-600">
+                  © 2024 Hope Connect. Built with love for those who need support.
+                </p>
+                <p className="text-xs text-gray-500 mt-1">
+                  Your privacy is our priority. All conversations are secure and confidential.
+                </p>
+              </div>
+              
+              <div className="flex items-center gap-4">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setActiveTab("transparency")}
+                  className="text-sm"
+                >
+                  View Transparency
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setActiveTab("donate")}
+                  className="text-sm"
+                >
+                  Support Us
+                </Button>
+              </div>
+            </div>
           </div>
-        </section>
-
-        <Separator />
-
-        {/* Footer */}
-        <footer className="text-center text-muted-foreground">
-          <p>
-            Component showcase built with React, TypeScript, and Tailwind CSS
-          </p>
-        </footer>
-      </div>
+        </motion.footer>
+      )}
     </div>
   );
 }
