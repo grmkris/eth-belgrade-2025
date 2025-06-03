@@ -19,6 +19,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@workspace/ui/components/select";
+import { useAccount } from "wagmi";
+import ConnectButton from "@/components/ConnectButton";
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -69,6 +71,8 @@ const impactVariants = {
 };
 
 export const Donate = () => {
+  const { isConnected, address } = useAccount();
+  
   const donationAmounts = [
     { value: "5", label: "$5", impact: "1 hour of support" },
     { value: "10", label: "$10", impact: "2 hours of support" },
@@ -188,13 +192,22 @@ export const Donate = () => {
                 whileTap={{ scale: 0.98 }}
                 className="pt-4"
               >
-                <Button
-                  size="lg"
-                  className="w-full text-lg py-6 rounded-xl bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 shadow-lg hover:shadow-xl transition-all"
-                >
-                  <CreditCardIcon className="mr-3 h-5 w-5" />
-                  Donate with USDC
-                </Button>
+                {isConnected ? (
+                  <Button
+                    size="lg"
+                    className="w-full text-lg py-6 rounded-xl bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 shadow-lg hover:shadow-xl transition-all"
+                  >
+                    <CreditCardIcon className="mr-3 h-5 w-5" />
+                    Donate with USDC
+                  </Button>
+                ) : (
+                  <div className="space-y-3">
+                    <p className="text-center text-sm text-gray-600">
+                      Connect your wallet to donate
+                    </p>
+                    <ConnectButton />
+                  </div>
+                )}
               </motion.div>
 
               {/* Security & Privacy Info */}

@@ -10,6 +10,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@workspace/ui/components/card";
+import { useWallet } from "@/hooks/useWallet";
+import ConnectButton from "@/components/ConnectButton";
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -47,6 +49,8 @@ const progressVariants = {
 };
 
 export const Landing = () => {
+  const { isConnected } = useWallet();
+  
   const testimonials = [
     {
       quote: "This AI companion helped me through my darkest moments. Having someone available 24/7 made all the difference.",
@@ -90,14 +94,21 @@ export const Landing = () => {
               <MessageCircleIcon className="mr-2 h-5 w-5" />
               Start Conversation
             </Button>
-            <Button
-              size="lg"
-              variant="outline"
-              className="text-lg px-8 py-6 rounded-full border-2 hover:bg-purple-50 transition-all"
-            >
-              <HeartIcon className="mr-2 h-5 w-5" />
-              Donate Support
-            </Button>
+            {isConnected ? (
+              <Button
+                size="lg"
+                variant="outline"
+                className="text-lg px-8 py-6 rounded-full border-2 hover:bg-purple-50 transition-all"
+              >
+                <HeartIcon className="mr-2 h-5 w-5" />
+                Donate Support
+              </Button>
+            ) : (
+              <div className="flex flex-col items-center gap-2">
+                <ConnectButton />
+                <span className="text-sm text-gray-500">Connect to donate</span>
+              </div>
+            )}
           </motion.div>
         </section>
 

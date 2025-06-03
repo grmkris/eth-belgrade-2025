@@ -8,6 +8,7 @@ import Landing from "@/components/Landing";
 import Chat from "@/components/Chat";
 import Donate from "@/components/Donate";
 import Ledger from "@/components/Ledger";
+import ConnectButton from "@/components/ConnectButton";
 
 const navItems = [
   { id: "home", label: "Home", icon: HomeIcon },
@@ -102,16 +103,14 @@ export default function Page() {
                   </option>
                 ))}
               </select>
+              <div className="ml-2">
+                <ConnectButton />
+              </div>
             </div>
 
             {/* CTA Button */}
             <div className="hidden md:block">
-              <Button
-                onClick={() => setActiveTab("chat")}
-                className="rounded-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 shadow-lg hover:shadow-xl transition-all"
-              >
-                Get Support Now
-              </Button>
+              <ConnectButton />
             </div>
           </nav>
         </div>
