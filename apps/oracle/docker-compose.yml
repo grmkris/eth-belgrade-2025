@@ -1,0 +1,57 @@
+version: '3.8'
+
+services:
+  oracle:
+    build:
+      context: .
+      dockerfile: dockerfile
+    container_name: chatbot-oracle
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      # Required environment variables (set these in .env file or override)
+      - CONTRACT_ADDRESS=${CONTRACT_ADDRESS}
+      - PRIVATE_KEY=${PRIVATE_KEY}
+      # Optional environment variables with defaults
+      - NETWORK_NAME=${NETWORK_NAME:-sapphire-testnet}
+      - OLLAMA_ADDRESS=${OLLAMA_ADDRESS:-http://ollama:11434}
+      - ROFL_URL=${ROFL_URL:-}
+    volumes:
+      # Mount ROFL socket if using Unix Domain Socket
+      - /run/rofl-appd.sock:/run/rofl-appd.sock:ro
+      # Optional: Mount logs directory
+      - ./logs:/app/logs
+    networks:
+      - oracle-network
+    depends_on:
+      - ollama
+    # Uncomment if you need to expose ports for debugging
+    # ports:
+    #   - "3000:3000"
+
+  # Optional: Include Ollama service for local development
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama
+    restart: unless-stopped
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    networks:
+      - oracle-network
+    # Uncomment if you have GPU support
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
+
+networks:
+  oracle-network:
+    driver: bridge
+
+volumes:
+  ollama_data: 

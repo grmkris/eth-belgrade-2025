@@ -1,0 +1,125 @@
+# NOTE: This name appears in GitHub's Checks API and in workflow's status badge.
+name: ci-lint
+
+# Trigger the workflow when:
+on:
+  # A push occurs to one of the matched branches.
+  push:
+    branches:
+      - main
+      - stable/*
+      - rc/*
+  # Or when a pull request event occurs for a pull request against one of the
+  # matched branches.
+  pull_request:
+    branches:
+      - main
+      - stable/*
+      - rc/*
+
+jobs:
+
+  lint-rust:
+    # NOTE: This name appears in GitHub's Checks API.
+    name: lint-rust
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./runtime
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Rust
+        run: rustup show
+
+      - name: Install protoc
+        run: sudo apt install -y protobuf-compiler
+
+      - name: Clippy check
+        run: cargo clippy --all-features --locked -- -D warnings -D clippy::dbg_macro
+
+      - name: Formatting check
+        run: cargo fmt -- --check
+
+  lint-js:
+    name: lint-client-js
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - uses: pnpm/action-setup@v4
+        name: Install pnpm
+        id: pnpm-install
+        with:
+          version: 8
+          run_install: false
+
+      - name: Get pnpm store directory
+        id: pnpm-cache
+        run: |
+          echo "::set-output name=pnpm_cache_dir::$(pnpm store path)"
+
+      - uses: actions/cache@v4
+        name: Setup pnpm cache
+        with:
+          path: ${{ steps.pnpm-cache.outputs.pnpm_cache_dir }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Install dependencies
+        run: pnpm --filter '@oasisprotocol/sapphire-*' install
+
+      - name: Lint JS client
+        run: pnpm --filter '@oasisprotocol/sapphire-*' lint
+
+  lint-client-py:
+    name: lint-client-py
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./clients/py
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Install dependencies
+        run: python3 -mpip install --user -r requirements.txt
+      - name: Install dev dependencies
+        run: python3 -mpip install --user -r requirements.dev.txt
+      - name: mypy
+        run: make mypy
+      - name: pylint
+        run: make lint
+
+  lint-client-go:
+    name: lint-client-go
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./clients/go
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          # Fetch all history so gitlint can check the relevant commits.
+          fetch-depth: '0'
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.22.x"
+        # Always run this step so that all linting errors can be seen at once.
+        if: always()
+      - name: Lint Go
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: v1.56.2
+          working-directory: ./clients/go
+        # Always run this step so that all linting errors can be seen at once.
+        if: always()

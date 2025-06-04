@@ -1,0 +1,25 @@
+{
+  "name": "@apps/oracle",
+  "version": "1.0.0",
+  "description": "ChatBot Oracle for Sapphire",
+  "type": "module",
+  "main": "oracle.ts",
+  "scripts": {
+    "dev": "bun run oracle.ts",
+    "start": "bun run oracle.ts",
+    "typecheck": "bun --bun tsc --noEmit"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.4.1",
+  "dependencies": {
+    "viem": "^2.7.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "@types/bun": "latest",
+    "bun-types": "latest",
+    "typescript": "^5.8.3"
+  }
+}

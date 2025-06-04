@@ -1,0 +1,131 @@
+name: ci-test
+
+on:
+  push:
+    branches:
+      - main
+      - stable/*
+      - rc/*
+  pull_request:
+    branches:
+      - main
+      - stable/*
+      - rc/*
+
+env:
+  OASIS_UNSAFE_SKIP_AVR_VERIFY: "1"
+  OASIS_UNSAFE_KM_POLICY_KEYS: "1"
+  OASIS_UNSAFE_ALLOW_DEBUG_ENCLAVES: "1"
+
+jobs:
+  test-rust:
+    name: test-rust
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./runtime
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Rust
+        run: rustup show
+
+      - name: Install protoc
+        run: sudo apt install -y protobuf-compiler
+
+      - name: Build
+        run: cargo build --release --locked
+
+  test-rust-sgx:
+    name: test-rust-sgx
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./runtime
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # gcc-multilib is required for bindgen to work for SGX.
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install gcc-multilib
+
+      - name: Set up Rust
+        run: rustup show
+
+      - name: Check SGX buildability
+        run: cargo check --locked --release --target x86_64-fortanix-unknown-sgx
+
+  test-client-js:
+    name: test-client-js
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./clients/js
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - uses: pnpm/action-setup@v4
+        name: Install pnpm
+        id: pnpm-install
+        with:
+          version: 8
+          run_install: false
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Test JS client
+        run: pnpm test:unit
+
+  test-client-py:
+    name: test-client-py
+    runs-on: ubuntu-latest
+    services:
+      sapphire-localnet-ci:
+        image: ghcr.io/oasisprotocol/sapphire-localnet:latest
+        ports:
+          - 8545:8545
+        options: >-
+          --rm
+          --health-cmd="test -f /CONTAINER_READY"
+          --health-start-period=90s
+    defaults:
+      run:
+        working-directory: ./clients/py
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Build sapphirepy .whl file
+        run: |
+          pip3 install --user -r requirements.txt
+          pip3 install --user -r requirements.dev.txt
+          make
+
+      - name: Install sapphirepy .whl file
+        run: |
+          pip3 install --user -r requirements.txt
+          pip3 install --user dist/sapphire.py-0.3.0-py3-none-any.whl
+
+      - name: Python client tests
+        working-directory: clients/py
+        run: |
+          python3 -mpip install --user -r requirements.txt
+          python3 -mpip install --user -r requirements.dev.txt
+          python3 -munittest discover
+          pytest sapphirepy/tests/

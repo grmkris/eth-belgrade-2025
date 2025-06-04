@@ -1,0 +1,81 @@
+name: contracts-test
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+jobs:
+  contracts-test:
+    runs-on: ubuntu-latest
+    services:
+      sapphire-localnet-ci:
+        image: ghcr.io/oasisprotocol/sapphire-localnet:latest
+        ports:
+          - 8545:8545
+          - 8546:8546
+        env:
+          OASIS_DOCKER_START_EXPLORER: no
+        options: >-
+          --rm
+          --health-cmd="test -f /CONTAINER_READY"
+          --health-start-period=90s
+    env:
+      SAPPHIRE_LOCALNET_HTTP_PROXY_PORT: 3001
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Install jq
+        run: sudo apt install -y jq
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+      - uses: pnpm/action-setup@v4
+        name: Install pnpm
+        id: pnpm-install
+        with:
+          version: 8
+          run_install: false
+      - name: Get pnpm store directory
+        id: pnpm-cache
+        run: |
+          echo "pnpm_cache_dir=$(pnpm store path)" >> $GITHUB_OUTPUT
+      - uses: actions/cache@v4
+        name: Setup pnpm cache
+        with:
+          path: ${{ steps.pnpm-cache.outputs.pnpm_cache_dir }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+      - name: Install dependencies
+        run: pnpm install
+      - name: Build
+        run: make -C clients/js build
+      - uses: JarvusInnovations/background-action@v1
+        name: RPC proxy will error if non-encrypted calls are made
+        with:
+          run: pnpm run proxy &
+          wait-on: http://127.0.0.1:${{ env.SAPPHIRE_LOCALNET_HTTP_PROXY_PORT }}
+          tail: true
+          log-output-resume: true
+          wait-for: 31sec
+          log-output: true
+          log-output-if: true
+          working-directory: clients/js
+      - name: Test JS client
+        run: make -C clients/js test lint
+      - name: Build & Test integrations
+        run: make -C integrations
+      - name: Build & Test Examples
+        run: make -C examples
+      - name: Build & Test sapphire-contracts package
+        run: make -C contracts
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+      - name: Install forge doc deps
+        run: cargo install mdbook-pagetoc
+      - name: Build docs
+        working-directory: contracts
+        run: pnpm doc

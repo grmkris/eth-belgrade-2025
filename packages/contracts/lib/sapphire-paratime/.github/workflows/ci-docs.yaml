@@ -1,0 +1,169 @@
+name: ci-docs
+
+on:
+  push:
+    paths:
+      - clients/js/**
+      - contracts/**
+      - clients/py/**
+    branches:
+      - main
+
+# Cancel in-progress jobs on same branch.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  js-docs:
+    name: js-docs
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./clients/js
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - uses: pnpm/action-setup@v4
+        name: Install pnpm
+        id: pnpm-install
+        with:
+          version: 8
+          run_install: false
+
+      - name: Get pnpm store directory
+        id: pnpm-cache
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path)" >> $GITHUB_OUTPUT
+
+      - uses: actions/cache@v4
+        name: Setup pnpm cache
+        with:
+          path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Build client/js docs
+        run: |
+          mkdir ../../docs-api
+          pnpm build # Required for integrations/
+          pnpm typedoc
+          mv docs/api ../../docs-api/sapphire-paratime
+
+      - name: Build integrations docs
+        working-directory: ./integrations
+        run: |
+          for i in */ ; do
+            pushd $i
+            pnpm build # Required for typedoc
+            if [ "$i" == "hardhat/" ]; then
+              # XXX: ExampleModule.ts is not compilable but is there for linting and example.
+              pnpm typedoc --tsconfig tsconfig.build.json
+            else
+              pnpm typedoc
+            fi
+            mv docs/api ../../docs-api/sapphire-$i
+            popd
+          done
+
+      - name: Deploy to api-reference branch
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: docs-api
+          publish_branch: api-reference
+          destination_dir: js
+          commit_message: Deploy js API reference ${{ github.event.head_commit.message }}
+          user_name: github-actions[bot]
+          user_email: 41898282+github-actions[bot]@users.noreply.github.com
+
+  sol-docs:
+    name: sol-docs
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./contracts
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        name: Install pnpm
+        id: pnpm-install
+        with:
+          version: 8
+          run_install: false
+
+      - name: Install dependencies
+        run: |
+          pnpm install
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+
+      - name: Install forge doc deps
+        run: cargo install mdbook-pagetoc
+
+      - name: Build docs
+        run: pnpm doc
+
+      - name: Deploy to api-reference branch
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: contracts/sol/sapphire-contracts/book
+          publish_branch: api-reference
+          destination_dir: sol/sapphire-contracts
+          commit_message: Deploy sol API reference ${{ github.event.head_commit.message }}
+          user_name: github-actions[bot]
+          user_email: 41898282+github-actions[bot]@users.noreply.github.com
+
+  py-docs:
+    name: py-docs
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./clients/py
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -r requirements.dev.txt
+          pip install sphinx myst-parser
+          make wheel
+          pip install dist/sapphire.py-*.whl
+
+      - name: Build docs
+        run: |
+          make docs
+
+      - name: Deploy to api-reference branch
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: clients/py/docs/build/html
+          publish_branch: api-reference
+          destination_dir: py/sapphirepy
+          commit_message: Deploy Python API reference ${{ github.event.head_commit.message }}
+          user_name: github-actions[bot]
+          user_email: 41898282+github-actions[bot]@users.noreply.github.com

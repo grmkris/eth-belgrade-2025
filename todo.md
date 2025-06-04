@@ -1,0 +1,3 @@
+- voice to text
+- usdc donations + contribution tracking
+- ai inference (chat api) using openrouter from donations
