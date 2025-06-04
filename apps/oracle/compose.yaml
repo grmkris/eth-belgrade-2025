@@ -1,11 +1,12 @@
 services:
   chatbot-oracle:
     build: .
-    image: "ghcr.io/your_username/chatbot-oracle"
+    image: "docker.io/kristjangrm/oracle-app"
     platform: linux/amd64
     environment:
       - CONTRACT_ADDRESS=${CONTRACT_ADDRESS}
       - PRIVATE_KEY=${PRIVATE_KEY}
       - NETWORK_NAME=${NETWORK_NAME:-sapphire-testnet}
-      - OLLAMA_ADDRESS=${OLLAMA_ADDRESS:-http://localhost:11434}
-      - ROFL_URL=${ROFL_URL:-} 
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
+    volumes:
+      - /run/rofl-appd.sock:/run/rofl-appd.sock

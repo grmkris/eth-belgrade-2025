@@ -21,6 +21,7 @@ deployments:
     network: testnet
     paratime: sapphire
     admin: kristjan
+    oci_repository: rofl.sh/f2549623-79b6-4629-b5a5-7a86f7cc8b07:1749071756
     trust_root:
       height: 26910030
       hash: 26895094efdd5c94d5d914696dafc986af2da5ac0d5b26ce893af531ed8845b4
@@ -31,9 +32,23 @@ deployments:
           min_tcb_evaluation_data_number: 18
           tdx: {}
       enclaves:
-        - id: r1PAnPP6oNvaIrgDXmKvJvM2zDiYmzujnn/b2I3nQv4AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==
-        - id: Egk2FCEsTDxopmv5nWj5AbbGBfPae/uQZp1IEjGWxywAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==
+        - id: +kezfV7mlNeQbJezTBj3xGWmYQtjZIHCy2xwfGwutxQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==
+        - id: aGneuWKe09kVaYRsdlBNRPPsz6QrxWSSt6nWmS6TMosAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==
       endorsements:
         - any: {}
       fees: endorsing_node
       max_expiration: 3
+    secrets:
+      - name: CONTRACT_ADDRESS
+        value: pGJwa1ggFhf7wiVZjeDDxDH2AmHijGvMwvVi/0+ULypjPkinokdkbmFtZVggq3MLtjyoXMRbUXP1FQc5zhkoAyhAT8Wz0yIlBS+Yl1Nlbm9uY2VPyQF6ko9aD+XDWtb6CmBfZXZhbHVlWDpNG8iIn6u3k3YZuE+TOa9XqMT6ayiERjxrtLKY/Y6QLFIH9h1+VAf8BIoTxsaR8fjKNjxVDcrJdKc/
+      - name: PRIVATE_KEY
+        value: pGJwa1ggjbPO3Cm9KtYB9hAQBRToVmt/mUjPdKjkz6KIyAY2yABkbmFtZVgbCsaiHKAqEhhgn5N9X1iFomFgOeWoGl7gWHQzZW5vbmNlTxFoWnSuZVKXvPeW05pf5GV2YWx1ZVhS6VhdxvmqPh7SGQMcYAeoMKmSlrHaa6uTOHqBo9jcpxt5NEytQ8L5oNBjJKjmuO2jxzoUzk6HTsEOvknkE4ZCh6N7INeZnbhfjazN+U/DrD0R0Q==
+      - name: NETWORK_NAME
+        value: pGJwa1ggnQu1qdsouU6y4Hv9YtJyIGCYIJc/6+SF684d+zKpkU1kbmFtZVgcM7PyrlfCCxBkartl8nN9wmndPXLpXncUxGHxCGVub25jZU98+n7jEhG6nNCIAtsNrBlldmFsdWVYIIvA1XmYiyYjSoUwref7unLmNjNGT/+Y2Q+JpmhIV1x3
+      - name: OPENROUTER_API_KEY
+        value: pGJwa1ggPdG2TmB0cI9+5owC+3pdTimcUdhLvzynczdPBIj6gQdkbmFtZVgiPupHoSFGPX23rQO262OejACF6qXGNzqS/2xKxJLGlMF27WVub25jZU8qTuVxnzYHESXhGWsUJn1ldmFsdWVYWcBq1ekyNaQ3yehFNJq58Q5a14go0psc/mVpNZ/c+ltA/qYTNeg9HAccYxbSuIe3BRsX/5HE3gj9BzZJSLLlx4plGwd4hR2Lif6nL/N0UYSNqDUjb6uBjMOX
+    machines:
+      default:
+        provider: oasis1qp2ens0hsp7gh23wajxa4hpetkdek3swyyulyrmz
+        offer: playground_short
+        id: 00000000000000bb
