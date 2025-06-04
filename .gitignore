@@ -57,10 +57,11 @@ node_modules/
 # Task files
 tasks.json
 tasks/ 
-
-# Ignore specified directories in any location
-**/.roo/
-**/.cursor/
-**/.taskmaster/
+# Ignore dotfiles and dotfolders
+.cursor/
+.env
+.env.example
+.roo/
 .roomodes
+.taskmaster/
 .windsurfrules

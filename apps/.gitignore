@@ -1,0 +1,13 @@
+# Ignore dotfiles and folders
+.cursor/
+.env
+.env.example
+.roo/
+.roomodes
+.taskmaster/
+.windsurfrules
+
+# (Optional) Ignore non-dot directories if desired
+# kyc/
+# kyc-frontend/
+# web/
