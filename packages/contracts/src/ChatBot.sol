@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.24;
 
-import {Subcall} from "@oasisprotocol/sapphire-contracts/contracts/Subcall.sol";
-import {SiweAuth} from "@oasisprotocol/sapphire-contracts/contracts/auth/SiweAuth.sol";
+import {Subcall} from "../lib/sapphire-paratime/contracts/contracts/Subcall.sol";
+import {SiweAuth} from "../lib/sapphire-paratime/contracts/contracts/auth/SiweAuth.sol";
 
 struct Answer {
     uint256 promptId;

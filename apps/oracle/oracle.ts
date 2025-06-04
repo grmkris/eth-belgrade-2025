@@ -12,27 +12,25 @@ import {
   encodeFunctionData,
 } from 'viem';
 import { privateKeyToAccount, type PrivateKeyAccount } from 'viem/accounts';
-import { mainnet } from 'viem/chains'; // Or your specific chain
-import { readFileSync } from 'fs';
-import { join, resolve } from 'path';
+import { sapphireTestnet } from 'viem/chains'; // Or your specific chain
 import { oracleAbi } from './oracleAbi.js';
+import { generateText, type CoreMessage } from 'ai';
+import { createOpenRouter } from '@openrouter/ai-sdk-provider';
+
+const openrouter = createOpenRouter({
+  apiKey: process.env.OPENROUTER_API_KEY,
+});
+
 
 // Interfaces
 interface ChatMessage {
-  role: string;
+  role: 'user' | 'system' | 'assistant' | 'tool';
   content: string;
 }
 
 interface OllamaResponse {
   message: {
     content: string;
-  };
-}
-
-interface ContractData {
-  abi: Abi;
-  bytecode: {
-    object: Hex;
   };
 }
 
@@ -69,7 +67,6 @@ interface ChatBotOracle {
   walletClient: WalletClient;
   account: PrivateKeyAccount;
   roflUtility: RoflUtility;
-  ollamaAddress: string;
 }
 
 // ContractUtility functions
@@ -88,13 +85,13 @@ function createContractUtility(networkName: string, secret: Hex): ContractUtilit
     : http(networkUrl);
 
   const publicClient = createPublicClient({
-    chain: mainnet, // Replace with your actual chain definition if not mainnet compatible
+    chain: sapphireTestnet, // Replace with your actual chain definition if not mainnet compatible
     transport,
   });
 
   const walletClient = createWalletClient({
     account: account,
-    chain: mainnet, // Replace with your actual chain
+    chain: sapphireTestnet, // Replace with your actual chain
     transport,
   });
   
@@ -204,7 +201,6 @@ async function submitTx(roflUtility: RoflUtility, tx: {
 function createChatBotOracle(
   contractAddress: Address,
   networkName: string,
-  ollamaAddress: string,
   roflUtility: RoflUtility,
   secret: Hex
 ): ChatBotOracle {
@@ -215,8 +211,7 @@ function createChatBotOracle(
     publicClient: contractUtility.publicClient,
     walletClient: contractUtility.walletClient,
     account: contractUtility.account,
-    roflUtility,
-    ollamaAddress,
+    roflUtility
   };
 }
 
@@ -371,30 +366,17 @@ async function askChatBot(oracle: ChatBotOracle, prompts: string[]): Promise<str
       content: prompt
     }));
 
-    const response = await fetch(`${oracle.ollamaAddress}/api/chat`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'deepseek-r1:1.5b', // Ensure this model is available in your Ollama instance
-        messages: messages,
-        stream: false // As per original Python code
-      }),
+    const { text } = await generateText({
+      model: openrouter.chat('anthropic/claude-3.5-sonnet'),
+      messages: messages.map(message => ({
+        role: message.role as 'user' | 'system' | 'assistant',
+        content: message.content,
+      })),
     });
 
-    if (!response.ok) {
-      const errorBody = await response.text();
-      throw new Error(`HTTP error! status: ${response.status}, body: ${errorBody}`);
-    }
-
-    const data = await response.json() as OllamaResponse;
-    if (data && data.message && typeof data.message.content === 'string') {
-      return data.message.content;
-    }
-    throw new Error("Invalid response structure from Ollama API");
+    return text;
   } catch (error) {
-    console.error("Error calling Ollama API:", error);
+    console.error("Error calling OpenRouter API:", error);
     return "Error generating response"; // Default error message
   }
 }
@@ -449,7 +431,6 @@ const isMainModule = import.meta.url === `file://${process.argv[1]}`;
 if (isMainModule) {
   const contractAddress = process.env.CONTRACT_ADDRESS as Address | undefined;
   const networkName = process.env.NETWORK_NAME || 'sapphire-testnet';
-  const ollamaAddress = process.env.OLLAMA_ADDRESS || 'http://localhost:11434';
   const secret = process.env.PRIVATE_KEY as Hex | undefined;
   
   if (!contractAddress || !secret) {
@@ -463,7 +444,6 @@ if (isMainModule) {
   const oracle = createChatBotOracle(
     contractAddress,
     networkName,
-    ollamaAddress,
     roflUtility,
     secret
   );
