@@ -15,8 +15,8 @@ export function Providers({
     <WalletProvider cookies={cookies}>
       <NextThemesProvider
         attribute="class"
-        defaultTheme="system"
-        enableSystem
+        defaultTheme="light"
+        // enableSystem
         disableTransitionOnChange
         enableColorScheme
       >
