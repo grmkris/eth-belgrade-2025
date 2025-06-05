@@ -8,13 +8,14 @@ import { Input } from "@workspace/ui/components/input";
 import { useSignMessage, useAccount } from "wagmi";
 import { useChat } from "@ai-sdk/react";
 import { createSiweMessage, generateSiweNonce } from "viem/siwe";
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { sapphireTestnet } from "viem/chains";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
 // Wrapper component to fix React 19 compatibility
 const MarkdownWrapper = ({ children }: { children: string }) => {
+  // Type assertion to fix React 19 compatibility issue
   return <ReactMarkdown remarkPlugins={[remarkGfm]}>{children}</ReactMarkdown>;
 };
 
@@ -93,6 +94,15 @@ export const Chat: React.FC = () => {
   const [input, setInput] = useState("");
   const [isVerified, setIsVerified] = useState(false);
   const [isCheckingVerification, setIsCheckingVerification] = useState(true);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll to bottom when messages change
+  const scrollToBottom = useCallback(() => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, []);
 
   // Check verification status on mount and when address changes
   useEffect(() => {
@@ -194,6 +204,11 @@ export const Chat: React.FC = () => {
     },
   });
 
+  // Auto-scroll when messages change or status changes
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages, status, scrollToBottom]);
+
   const handleDelete = useCallback((id: string) => {
     setMessages(messages.filter(message => message.id !== id));
   }, [messages, setMessages]);
@@ -235,6 +250,9 @@ export const Chat: React.FC = () => {
     try {
       const siweData = await authenticateWithSiwe();
       
+      // Clear input before appending
+      setInput("");
+      
       await append({
         role: 'user',
         content: prompt,
@@ -246,6 +264,8 @@ export const Chat: React.FC = () => {
       });
     } catch (error) {
       console.error("Failed to submit example prompt:", error);
+      // Reset input on error
+      setInput(prompt);
     }
   }, [append, authenticateWithSiwe]);
 
@@ -408,9 +428,12 @@ export const Chat: React.FC = () => {
         </div>
       </div>
 
-      {/* Chat Messages */}
+      {/* Chat Messages - Updated with ref and adjusted padding */}
       <div className="flex-1 overflow-hidden">
-        <div className="h-full overflow-y-auto p-4 space-y-4 container mx-auto max-w-4xl pb-24">
+        <div 
+          ref={scrollContainerRef}
+          className="h-full overflow-y-auto p-4 space-y-4 container mx-auto max-w-4xl pb-32 scroll-smooth"
+        >
           {messages.length === 0 && (
             <div className="py-4 sm:py-8">
               <motion.div 
@@ -580,6 +603,9 @@ export const Chat: React.FC = () => {
               </motion.div>
             )}
           </AnimatePresence>
+          
+          {/* Scroll anchor */}
+          <div ref={messagesEndRef} />
         </div>
       </div>
 
@@ -605,8 +631,8 @@ export const Chat: React.FC = () => {
         </div>
       )}
 
-      {/* Input Area - Fixed at bottom */}
-      <div className="fixed bottom-0 left-0 right-0 border-t bg-white/90 backdrop-blur-md p-3 sm:p-4 shadow-2xl">
+      {/* Input Area - Fixed at bottom with higher z-index */}
+      <div className="fixed bottom-0 left-0 right-0 border-t bg-white/95 backdrop-blur-md p-3 sm:p-4 shadow-2xl z-20">
         <div className="container mx-auto max-w-4xl px-4">
           <form onSubmit={onSubmit} className="flex gap-2 sm:gap-3 items-end">
             <div className="flex-1">

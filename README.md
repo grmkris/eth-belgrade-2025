@@ -1,6 +1,6 @@
 # Universal Basic AI - ETH Belgrade 2025
 
-[image.png](./image.png)
+![image.png](./image.png)
 
 A revolutionary platform implementing Universal Basic AI (UBAI) - ensuring every human has access to AI compute power as a fundamental right. Built on Oasis Protocol for complete privacy and anonymity
 
