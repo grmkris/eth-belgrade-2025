@@ -125,7 +125,7 @@ export const Chat: React.FC = () => {
       // Store wallet address before redirecting
       localStorage.setItem('pendingVerificationWallet', address);
       // Redirect to KYC service
-      window.location.href = `http://localhost:3002?wallet=${address}`;
+      window.location.href = `https://eth-belgrade-2025-universal-basic-a-omega.vercel.app`;
     }
   }, [address]);
 
