@@ -183,7 +183,7 @@ const app = new Hono();
 
 // Add CORS middleware
 app.use('/*', cors({
-  origin: ['http://localhost:3000', 'http://localhost:5173', 'https://your-frontend-domain.com'],
+  origin: ['http://localhost:3000', 'http://localhost:5173', 'https://your-frontend-domain.com', 'https://eth-belgrade-2025-universal-basic-a-theta.vercel.app'],
   allowHeaders: ['Content-Type', 'Authorization'],
   allowMethods: ['POST', 'GET', 'OPTIONS'],
 }));
