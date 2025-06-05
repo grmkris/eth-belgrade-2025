@@ -22,7 +22,7 @@ passport_data = deserializer.getValue('passport', 'string')
 ### 2. **TDX Configuration** 
 ✅ **SMS Endpoint**: `https://sms.labs.iex.ec`
 ✅ **TDX Workerpool**: `tdx-labs.pools.iexec.eth` (updated from previous)
-✅ **App Address**: `0x7e61d3de5a9ff9de9d6359835a77fbaf4a0dea49`
+✅ **App Address**: `0xe74746cc555af4b4bf067b381249a7a711e2a2aa`
 
 ### 3. **Dependencies Updated**
 ✅ Python 3.9 compatible versions in `requirements.txt`
@@ -50,7 +50,7 @@ cd apps/kyc
 EXPERIMENTAL_TDX_APP=true iapp deploy
 
 # Test locally (after deployment)
-iapp run 0x7e61d3de5a9ff9de9d6359835a77fbaf4a0dea49 --protectedData [ADDRESS]
+iapp run 0xe74746cc555af4b4bf067b381249a7a711e2a2aa --protectedData [ADDRESS]
 ```
 
 ### 6. **Demo Flow**
