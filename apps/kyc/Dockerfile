@@ -1,4 +1,5 @@
-FROM python:3.9-slim
+# Use explicit platform for cross-platform compatibility
+FROM --platform=linux/amd64 python:3.9-slim
 
 # Install system dependencies required for EasyOCR and OpenCV
 RUN apt-get update && apt-get install -y \

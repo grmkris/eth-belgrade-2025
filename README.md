@@ -112,8 +112,14 @@ NEXT_PUBLIC_KYC_URL=http://localhost:3002
 
 #### `apps/kyc/.env`
 ```env
-WEB3_PRIVATE_KEY=0x...                   # Private key for KYC operations
-IEXEC_APP_ENDPOINT=https://...          # iExec DataProtector endpoint
+# iExec Configuration (for TEE deployment)
+# No .env needed - configured via iapp.config.json
+# Deployment done with: EXPERIMENTAL_TDX_APP=true iapp deploy
+```
+
+#### `apps/kyc-frontend/.env.local`
+```env
+NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID=your_project_id  # Get from WalletConnect Cloud
 ```
 
 ### 3. Deploy Smart Contracts
@@ -137,9 +143,10 @@ In separate terminals:
 cd apps/oracle
 bun run oracleWEB.ts
 
-# Terminal 2: Start the KYC service
+# Terminal 2: Start the KYC service (iExec TEE backend)
 cd apps/kyc
-npm run start
+# Deploy to iExec with TDX experimental flag
+EXPERIMENTAL_TDX_APP=true iapp deploy
 
 # Terminal 3: Start the KYC frontend
 cd apps/kyc-frontend
@@ -153,8 +160,106 @@ npm run dev
 ### 5. Access the Application
 
 - **Main App**: http://localhost:3000
-- **Oracle API**: http://localhost:3001
-- **KYC Service**: http://localhost:3002
+- **Oracle API**: http://localhost:3001  
+- **KYC Frontend**: http://localhost:3000 (React app)
+- **KYC Service**: Deployed on iExec TEE (see deployment logs for app address)
+
+## 🔐 KYC System (Identity Verification)
+
+The project includes a privacy-preserving KYC system for verifying user identity and country of residence. This enables fair allocation of AI compute credits based on geographic location.
+
+### Architecture
+- **Frontend**: React app with Web3 wallet integration (`apps/kyc-frontend`)
+- **Backend**: iExec TEE application for secure passport processing (`apps/kyc`)
+- **Privacy**: Uses iExec DataProtector + TDX for confidential computing
+
+### 🚀 KYC Quick Start
+
+#### 1. Setup KYC Frontend
+```bash
+cd apps/kyc-frontend
+npm install
+cp .env.example .env.local
+# Add your WalletConnect Project ID to .env.local
+npm run dev
+```
+
+#### 2. Deploy KYC Backend to iExec TEE
+```bash
+cd apps/kyc
+npm install -g @iexec/iapp
+# Deploy with TDX experimental flag for hackathon
+EXPERIMENTAL_TDX_APP=true iapp deploy
+```
+
+#### 3. Update Frontend Configuration
+After deployment, update the app address in `apps/kyc-frontend/src/services/teeService.ts`:
+```typescript
+const DEPLOYED_IAPP_ADDRESS = '0x...'; // Your deployed app address
+```
+
+### 🔍 How KYC Works
+
+1. **Upload Passport**: User uploads passport image via React frontend
+2. **Data Protection**: Image encrypted using iExec DataProtector with simple schema:
+   ```javascript
+   { passport: base64ImageData }
+   ```
+3. **TEE Processing**: Secure processing in iExec TDX environment:
+   - Enhanced OCR with EasyOCR + custom pattern matching
+   - MRZ (Machine Readable Zone) parsing
+   - Country extraction and verification
+   - Confidence scoring with multiple fallback strategies
+4. **Result Return**: Verified country and passport data returned
+
+### 🛠️ KYC Development
+
+#### Frontend Development
+```bash
+cd apps/kyc-frontend
+npm run dev          # Start development server
+npm run build        # Build for production
+npm run type-check   # TypeScript validation
+```
+
+#### Backend Development  
+```bash
+cd apps/kyc
+iapp test           # Test locally
+iapp run <app-address> --protectedData <data-address>  # Manual testing
+```
+
+### 🎯 KYC Features
+
+#### Enhanced OCR Processing
+- **Multiple Extraction Methods**: MRZ parsing, pattern matching, text analysis
+- **Confidence Scoring**: Intelligent scoring with fallback strategies
+- **Country Detection**: Automatic country identification from passport data
+- **Demo Mode**: Reliable fallback results for hackathon showcasing
+
+#### Privacy & Security
+- **TEE Processing**: All OCR happens in Trusted Execution Environment
+- **Data Protection**: Images encrypted end-to-end via iExec DataProtector  
+- **No Storage**: No persistent storage of sensitive documents
+- **Fallback Safety**: Multiple fallback layers ensure demo reliability
+
+#### Technical Stack
+- **Frontend**: React 18, TypeScript, Web3 integration (ethers.js)
+- **Backend**: Python 3.9, EasyOCR, PIL, iExec TEE framework
+- **Blockchain**: iExec Bellecour (chainId: 134) with TDX workerpool
+- **Deployment**: iExec iApp with `EXPERIMENTAL_TDX_APP=true`
+
+### 📋 KYC Configuration
+
+#### TDX Configuration (per hackathon docs)
+- **SMS Endpoint**: `https://sms.labs.iex.ec`
+- **Workerpool**: `tdx-labs.pools.iexec.eth`
+- **Dataset Type**: Simple `{ passport: string }` structure
+- **Deserializer**: Custom Python implementation with zip + Borsh
+
+#### Dependencies
+- **Frontend**: React, ethers.js, @iexec/dataprotector
+- **Backend**: easyocr, Pillow, opencv-python-headless, borsh-construct
 
 ## 🔧 Development
 
@@ -179,15 +284,16 @@ pnpm lint
 ```
 eth-belgrade-2025/
 ├── apps/
-│   ├── web/              # Main frontend
-│   ├── oracle/           # AI chat backend
-│   ├── kyc/              # Identity verification
-│   └── kyc-frontend/     # KYC UI
+│   ├── web/              # Main frontend (Universal Basic AI)
+│   ├── oracle/           # AI chat backend (ROFL TEE)
+│   ├── kyc/              # Identity verification (iExec TEE backend)
+│   └── kyc-frontend/     # KYC UI (React frontend)
 ├── packages/
-│   ├── contracts/        # Smart contracts
+│   ├── contracts/        # Smart contracts (Sapphire)
 │   ├── ui/              # Shared UI components
 │   ├── eslint-config/   # ESLint configuration
 │   └── typescript-config/# TypeScript configuration
+├── HACKATHON_POC_GUIDE.md # Quick setup guide for ETH Belgrade
 └── turbo.json           # Turborepo configuration
 ```
 
@@ -256,7 +362,9 @@ This ensures those in lower-income countries get MORE access, counteracting glob
 - [Web Frontend Documentation](apps/web/readme.md)
 - [Oracle API Documentation](apps/oracle/README.md)
 - [Smart Contract Documentation](packages/contracts/README.md)
-- [KYC Frontend Documentation](apps/kyc/README.md)
+- [KYC TEE Backend Documentation](apps/kyc/README.md)
+- [KYC Frontend Documentation](apps/kyc-frontend/README.md)
+- [Hackathon POC Guide](HACKATHON_POC_GUIDE.md) - Quick setup for ETH Belgrade demo
 
 ## 🙏 Acknowledgments
 

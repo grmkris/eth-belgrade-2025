@@ -221,50 +221,17 @@ class TEEService {
       }
       
       const primaryImageData = await this.fileToBase64(processedFile);
-      console.log('Primary file converted to base64, length:', primaryImageData.length);
-      
-      // Create additional files data as separate fields (DataProtector doesn't support arrays)
-      const additionalFiles: Record<string, string> = {};
-      if (files.length > 1) {
-        console.log('Processing additional files...');
-        for (let i = 1; i < Math.min(files.length, 3); i++) {
-          let additionalFile = files[i];
-          
-          // Compress additional files if needed
-          if (additionalFile.size > 500 * 1024) {
-            console.log(`🗜️ Additional file ${i + 1} too large, compressing...`);
-            additionalFile = await this.compressImage(additionalFile, 400);
-            console.log(`✅ Additional file ${i + 1} compressed to:`, additionalFile.size, 'bytes');
-          }
-          
-          const fileData = await this.fileToBase64(additionalFile);
-          additionalFiles[`passport_image_${i + 1}`] = fileData;
-          console.log(`Additional file ${i + 1} processed, length:`, fileData.length);
-        }
-      }
+      console.log('📷 Primary file converted to base64, length:', primaryImageData.length);
 
-      // Prepare data object for DataProtector
+      // Prepare data object for DataProtector - Following hackathon documentation
+      // Simple dataset type declaration as per documentation
       const dataToProtect = {
-        // Primary passport image (DataProtector supports simple key-value pairs)
-        passport_image_1: primaryImageData,
-        // Additional images as separate fields
-        ...additionalFiles,
-        // Metadata as simple fields
-        datasetType: 'passport-images',
-        version: '1.0.0',
-        totalFiles: files.length.toString(),
-        uploadTimestamp: Date.now().toString(),
-        purpose: 'kyc-verification',
-        processingType: 'ocr-passport-extraction',
-        // File metadata
-        primaryFileName: processedFile.name,
-        primaryFileSize: processedFile.size.toString(),
-        primaryFileType: processedFile.type
+        passport: primaryImageData, // Simple key-value structure
       };
 
-      console.log('Data structure prepared for DataProtector:');
-      console.log('- Keys:', Object.keys(dataToProtect));
-      console.log('- Total data size:', JSON.stringify(dataToProtect).length, 'bytes');
+      console.log('📦 Data structure prepared for DataProtector:');
+      console.log('- Dataset type: passport (simple key-value for hackathon POC)');
+      console.log('- Image data length:', primaryImageData.length, 'characters');
 
       // Step 1: Protect the passport data using DataProtector with flattened structure
       console.log('🔐 Calling DataProtector.protectData() - MetaMask should prompt for signature...');
@@ -312,7 +279,7 @@ class TEEService {
           maxPrice: 0,
           args: "process_passport",
           inputFiles: [], // Files are already embedded in protected data
-          workerpool: 'prod-v8-bellecour.main.pools.iexec.eth' // TDX workerpool for hackathon
+          workerpool: 'tdx-labs.pools.iexec.eth' // TDX workerpool as per hackathon docs
         });
         
         console.log('✅ DataProtector processing initiated successfully!');
