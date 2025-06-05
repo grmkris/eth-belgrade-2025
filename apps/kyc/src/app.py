@@ -108,6 +108,16 @@ def main():
     computed_json = {}
     
     try:
+        # Get arguments passed from iExec
+        args = sys.argv[1:] if len(sys.argv) > 1 else []
+        print(f"App arguments received: {args}")
+        
+        # Check if we have the expected processing argument
+        if args and "process_passport" in args:
+            print("✅ Processing passport data as requested...")
+        else:
+            print("ℹ️ No specific processing argument, proceeding with passport OCR...")
+        
         print("Starting passport OCR processing...")
         
         # Initialize OCR reader
@@ -120,11 +130,18 @@ def main():
         input_dir = IEXEC_IN or 'input'
         
         print(f"Looking for image files in: {input_dir}")
+        print(f"IEXEC_IN environment variable: {IEXEC_IN}")
+        print(f"IEXEC_OUT environment variable: {IEXEC_OUT}")
         
         # Check if input directory exists
         if not os.path.exists(input_dir):
             print(f"Input directory {input_dir} does not exist, using current directory")
             input_dir = '.'
+        
+        # List all files in input directory for debugging
+        print(f"Files in {input_dir}:")
+        for file in os.listdir(input_dir):
+            print(f"  - {file}")
         
         # Find image files
         for file in os.listdir(input_dir):
@@ -139,11 +156,21 @@ def main():
                 "passport_number": "L898902C",
                 "country": "DEU", 
                 "verified": True,
-                "error": "No image file found in input"
+                "error": "No image file found in input",
+                "debug_info": {
+                    "input_dir": input_dir,
+                    "files_found": os.listdir(input_dir) if os.path.exists(input_dir) else [],
+                    "args": args
+                }
             }
         else:
             # Process the passport image
             result = process_passport(image_file, reader)
+            result["debug_info"] = {
+                "input_file": image_file,
+                "input_dir": input_dir,
+                "args": args
+            }
         
         print(f"OCR Result: {result}")
         
@@ -167,7 +194,11 @@ def main():
             "passport_number": "L898902C",
             "country": "DEU",
             "verified": True,
-            "error": str(e)
+            "error": str(e),
+            "debug_info": {
+                "exception": str(e),
+                "args": sys.argv[1:] if len(sys.argv) > 1 else []
+            }
         }
         
         # Write error result

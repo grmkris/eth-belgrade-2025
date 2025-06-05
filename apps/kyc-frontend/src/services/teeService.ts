@@ -1,4 +1,5 @@
 import { IExecDataProtector } from '@iexec/dataprotector';
+import { IExec } from 'iexec';
 import { walletService } from './walletService';
 
 export interface TEESubmissionResult {
@@ -34,9 +35,13 @@ class TEEService {
     }
 
     try {
-      // Initialize iExec DataProtector with the ethers.js provider
+      // Initialize iExec DataProtector with the ethers.js provider and SMS URL
       console.log('Creating IExecDataProtector instance...');
-      this.dataProtector = new IExecDataProtector(provider);
+      this.dataProtector = new IExecDataProtector(provider, {
+        iexecOptions: {
+          smsURL: 'https://sms.labs.iex.ec/',
+        },
+      });
       
       // Test the connection and check network
       const network = await provider.getNetwork();
@@ -273,37 +278,128 @@ class TEEService {
       // Step 2: Submit to deployed iApp for TEE processing
       console.log('🚀 Submitting to deployed iApp for TEE processing...');
       
-      const DEPLOYED_IAPP_ADDRESS = '0x75b462c8BD37455750E5f8ce17AC54dF8736E76c';
+      const DEPLOYED_IAPP_ADDRESS = '0x77E4126768A17585170f0Fe190f052327070babE';
       const IAPP_WALLET_ADDRESS = '0xbb1E86387b628441b40B2cB145AEb60B11173B0B';
       
       // Step 1.5: Grant access to the iApp wallet for CLI testing
       try {
         console.log('🔑 Granting access to iApp wallet for CLI testing...');
-        await dataProtector.core.grantAccess({
+        console.log('- Protected data:', protectedData.address);
+        console.log('- Authorized app:', DEPLOYED_IAPP_ADDRESS);
+        console.log('- Authorized user:', IAPP_WALLET_ADDRESS);
+        
+        const grantResult = await dataProtector.core.grantAccess({
           protectedData: protectedData.address,
           authorizedApp: DEPLOYED_IAPP_ADDRESS,
           authorizedUser: IAPP_WALLET_ADDRESS,
         });
-        console.log('✅ Access granted to iApp wallet!');
+        
+        console.log('✅ Access granted to iApp wallet!', grantResult);
+        console.log('📋 For CLI testing, use: iapp run', DEPLOYED_IAPP_ADDRESS, '--protectedData', protectedData.address);
       } catch (grantError) {
         console.warn('⚠️ Could not grant access to iApp wallet:', grantError);
+        console.log('📋 Manual CLI command: iapp run', DEPLOYED_IAPP_ADDRESS, '--protectedData', protectedData.address);
       }
       
       try {
-        console.log(`📡 Calling iApp at ${DEPLOYED_IAPP_ADDRESS} with protected data ${protectedData.address}`);
+        console.log(`📡 Creating iExec task with proper parameters...`);
         
-        const processingResult = await dataProtector.core.processProtectedData({
-          protectedData: protectedData.address,
-          app: DEPLOYED_IAPP_ADDRESS,
-          // Add any required secrets or parameters here if needed
+        // Initialize raw iExec SDK for more control over task parameters
+        const provider = walletService.getProvider();
+        const iexec = new IExec({
+          ethProvider: provider,
         });
         
-        console.log('✅ TEE processing submitted successfully!');
-        console.log('Task ID:', processingResult.taskId);
-        console.log('Deal ID:', processingResult.dealId);
+        // Replicate CLI 'iapp run' functionality - create orders directly
+        console.log('🚀 Creating direct orders (equivalent to CLI iapp run)...');
+        
+        // Create and sign app order (we own this app)
+        const apporder = await iexec.order.createApporder({
+          app: DEPLOYED_IAPP_ADDRESS,
+          appprice: '0',
+          volume: '1',
+          tag: '0x0000000000000000000000000000000000000000000000000000000000000003' // TDX tag (hex for 3)
+        });
+        const signedApporder = await iexec.order.signApporder(apporder);
+        console.log('✅ App order created and signed');
+
+        // Fetch workerpool orders from marketplace (we don't own the workerpool)
+        console.log('📋 Fetching TDX workerpool orders from marketplace...');
+        
+        let workerpoolOrder;
+        try {
+          // Try specific TDX Testbed first
+          const workerpoolOrderbook = await iexec.orderbook.fetchWorkerpoolOrderbook({
+            workerpool: '0x4568effcec8ba0787e52deef10ed03267e7c95b1',
+            category: '0'
+          });
+          
+          if (workerpoolOrderbook.orders && workerpoolOrderbook.orders.length > 0) {
+            workerpoolOrder = workerpoolOrderbook.orders[0].order;
+            console.log('✅ Found specific TDX workerpool order');
+          }
+        } catch (specificError) {
+          console.log('⚠️ Specific TDX workerpool query failed:', specificError);
+        }
+        
+        // Fallback: Try broader category 0 search for any TDX-compatible workerpool
+        if (!workerpoolOrder) {
+          console.log('📋 Searching for any TDX-compatible workerpool orders...');
+          try {
+            const broadOrderbook = await iexec.orderbook.fetchWorkerpoolOrderbook({
+              category: '0'
+            });
+            
+            // Filter for orders with TDX tag
+            const tdxOrders = broadOrderbook.orders?.filter(orderInfo => 
+              orderInfo.order.tag === '0x0000000000000000000000000000000000000000000000000000000000000003'
+            );
+            
+            if (tdxOrders && tdxOrders.length > 0) {
+              workerpoolOrder = tdxOrders[0].order;
+              console.log('✅ Found TDX-compatible workerpool:', workerpoolOrder.workerpool);
+            }
+          } catch (broadError) {
+            console.log('⚠️ Broad workerpool search failed:', broadError);
+          }
+        }
+        
+        if (!workerpoolOrder) {
+          throw new Error(`No TDX workerpool orders available. Please use CLI: iapp run ${DEPLOYED_IAPP_ADDRESS} --protectedData ${protectedData.address}`);
+        }
+        
+        console.log('✅ Using workerpool order:', workerpoolOrder.workerpool);
+
+        // Create and sign request order with protected data
+        const requestorder = await iexec.order.createRequestorder({
+          app: DEPLOYED_IAPP_ADDRESS,
+          dataset: protectedData.address,
+          category: '0',
+          params: JSON.stringify({
+            iexec_args: "process_passport"
+          }),
+          workerpool: '0x4568effcec8ba0787e52deef10ed03267e7c95b1',
+          tag: '0x0000000000000000000000000000000000000000000000000000000000000003' // TDX tag (hex for 3)
+        });
+        const signedRequestorder = await iexec.order.signRequestorder(requestorder);
+        console.log('✅ Request order created and signed');
+
+        console.log('📡 Matching orders to create deal (like CLI iapp run)...');
+        
+        const { dealid } = await iexec.order.matchOrders({
+          apporder: signedApporder,
+          workerpoolorder: workerpoolOrder,
+          requestorder: signedRequestorder
+        });
+        
+        const taskid = await iexec.deal.computeTaskId(dealid, '0');
+        
+        console.log('✅ TEE task created successfully!');
+        console.log('Task ID:', taskid);
+        console.log('Deal ID:', dealid);
         
         return {
-          taskId: processingResult.taskId,
+          taskId: taskid,
           protectedDataAddress: protectedData.address,
           status: 'submitted',
           timestamp: Date.now(),
