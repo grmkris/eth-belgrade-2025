@@ -1,17 +1,22 @@
 "use client";
 
 import { motion, AnimatePresence } from "motion/react";
-import { SendIcon, BotIcon, UserIcon, StopCircleIcon, RefreshCwIcon, SparklesIcon, HeartIcon, BrainIcon, UsersIcon, TrendingUpIcon, TargetIcon } from "lucide-react";
+import { SendIcon, BotIcon, UserIcon, StopCircleIcon, RefreshCwIcon, SparklesIcon, HeartIcon, BrainIcon, UsersIcon, TrendingUpIcon, TargetIcon, ShieldCheckIcon, GlobeIcon, CheckCircleIcon } from "lucide-react";
 import { Button } from "@workspace/ui/components/button";
 import { Card, CardContent } from "@workspace/ui/components/card";
 import { Input } from "@workspace/ui/components/input";
 import { useSignMessage, useAccount } from "wagmi";
 import { useChat } from "@ai-sdk/react";
 import { createSiweMessage, generateSiweNonce } from "viem/siwe";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { sapphireTestnet } from "viem/chains";
-import Markdown from "react-markdown";
+import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+
+// Wrapper component to fix React 19 compatibility
+const MarkdownWrapper = ({ children }: { children: string }) => {
+  return <ReactMarkdown remarkPlugins={[remarkGfm]}>{children}</ReactMarkdown>;
+};
 
 const messageVariants = {
   hidden: { opacity: 0, y: 20, scale: 0.95 },
@@ -86,6 +91,48 @@ export const Chat: React.FC = () => {
   const { address, isConnected } = useAccount();
   const [isAuthenticating, setIsAuthenticating] = useState(false);
   const [input, setInput] = useState("");
+  const [isVerified, setIsVerified] = useState(false);
+  const [isCheckingVerification, setIsCheckingVerification] = useState(true);
+
+  // Check verification status on mount and when address changes
+  useEffect(() => {
+    if (address) {
+      setIsCheckingVerification(true);
+      // Check if this wallet has been verified
+      const verifiedWallets = JSON.parse(localStorage.getItem('verifiedWallets') || '[]');
+      const verified = verifiedWallets.includes(address.toLowerCase());
+      setIsVerified(verified);
+      setIsCheckingVerification(false);
+    } else {
+      setIsVerified(false);
+      setIsCheckingVerification(false);
+    }
+  }, [address]);
+
+  // Handle verification redirect
+  const handleVerification = useCallback(() => {
+    if (address) {
+      // Store wallet address before redirecting
+      localStorage.setItem('pendingVerificationWallet', address);
+      // Redirect to KYC service
+      window.location.href = `http://localhost:3002?wallet=${address}`;
+    }
+  }, [address]);
+
+  // Check if returning from verification
+  useEffect(() => {
+    const pendingWallet = localStorage.getItem('pendingVerificationWallet');
+    if (pendingWallet && address && pendingWallet.toLowerCase() === address.toLowerCase()) {
+      // Mark as verified (in real app, you'd check with backend)
+      const verifiedWallets = JSON.parse(localStorage.getItem('verifiedWallets') || '[]');
+      if (!verifiedWallets.includes(address.toLowerCase())) {
+        verifiedWallets.push(address.toLowerCase());
+        localStorage.setItem('verifiedWallets', JSON.stringify(verifiedWallets));
+      }
+      localStorage.removeItem('pendingVerificationWallet');
+      setIsVerified(true);
+    }
+  }, [address]);
 
   // Create SIWE authentication
   const authenticateWithSiwe = useCallback(async () => {
@@ -237,6 +284,83 @@ export const Chat: React.FC = () => {
     );
   }
 
+  // Show loading while checking verification
+  if (isCheckingVerification) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 flex items-center justify-center p-4">
+        <Card className="p-6 sm:p-8 text-center max-w-md w-full backdrop-blur-sm bg-white/90 shadow-xl">
+          <CardContent>
+            <div className="animate-spin w-12 h-12 border-4 border-purple-600 border-t-transparent rounded-full mx-auto mb-4"></div>
+            <p className="text-gray-600">Checking verification status...</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Show verification required screen
+  if (!isVerified) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 flex items-center justify-center p-4">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+        >
+          <Card className="p-6 sm:p-8 text-center max-w-md w-full backdrop-blur-sm bg-white/90 shadow-xl">
+            <CardContent>
+              <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
+                <ShieldCheckIcon className="w-8 h-8 text-white" />
+              </div>
+              <h2 className="text-2xl sm:text-3xl font-bold mb-2 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                One-Time Verification
+              </h2>
+              <p className="text-gray-600 mb-6 text-sm sm:text-base">
+                To ensure the best experience and calculate your AI usage allowance, we need to verify your identity and location.
+              </p>
+              
+              <div className="space-y-3 text-left mb-6">
+                <div className="flex items-start gap-3 bg-blue-50 p-3 rounded-lg">
+                  <GlobeIcon className="w-5 h-5 text-blue-600 mt-0.5" />
+                  <div>
+                    <p className="font-semibold text-gray-800 text-sm">Location Verification</p>
+                    <p className="text-xs text-gray-600">Helps us calculate your AI usage allowance based on your region</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3 bg-purple-50 p-3 rounded-lg">
+                  <ShieldCheckIcon className="w-5 h-5 text-purple-600 mt-0.5" />
+                  <div>
+                    <p className="font-semibold text-gray-800 text-sm">Human Verification</p>
+                    <p className="text-xs text-gray-600">Ensures you're a unique person to provide fair access</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3 bg-green-50 p-3 rounded-lg">
+                  <CheckCircleIcon className="w-5 h-5 text-green-600 mt-0.5" />
+                  <div>
+                    <p className="font-semibold text-gray-800 text-sm">Quick & Easy</p>
+                    <p className="text-xs text-gray-600">Takes only a minute and you'll never need to do it again</p>
+                  </div>
+                </div>
+              </div>
+
+              <Button
+                onClick={handleVerification}
+                className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200"
+              >
+                <ShieldCheckIcon className="w-4 h-4 mr-2" />
+                Verify My Identity
+              </Button>
+              
+              <p className="text-xs text-gray-500 mt-4">
+                Your wallet: {address?.slice(0, 6)}...{address?.slice(-4)}
+              </p>
+            </CardContent>
+          </Card>
+        </motion.div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 flex flex-col">
       {/* Header */}
@@ -256,6 +380,12 @@ export const Chat: React.FC = () => {
           
           {/* Status indicator */}
           <div className="flex items-center gap-2">
+            {isVerified && (
+              <div className="flex items-center gap-1 text-green-600 text-xs sm:text-sm bg-green-100 px-2 py-1 rounded-full">
+                <CheckCircleIcon className="w-3 h-3 sm:w-4 sm:h-4" />
+                <span>Verified</span>
+              </div>
+            )}
             {status === 'streaming' && (
               <div className="flex items-center gap-2 text-purple-600">
                 <div className="animate-pulse w-2 h-2 bg-purple-600 rounded-full"></div>
@@ -380,14 +510,14 @@ export const Chat: React.FC = () => {
                         }`}>
                           {message.role === "assistant" ? (
                             <div className="prose prose-sm max-w-none">
-                              <Markdown remarkPlugins={[remarkGfm]}>
+                              <MarkdownWrapper>
                                 {message.parts?.map((part) => {
                                   if (part.type === 'text') {
                                     return part.text;
                                   }
                                   return '';
                                 }).join('') || message.content}
-                              </Markdown>
+                              </MarkdownWrapper>
                             </div>
                           ) : (
                             message.parts?.map((part, partIndex) => {
