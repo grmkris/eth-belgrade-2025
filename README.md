@@ -29,8 +29,8 @@ In a future where AI becomes essential for education, work, and daily life, we r
 ```
 ┌─────────────────┐     ┌─────────────────────────┐     ┌─────────────────┐
 │   Web Frontend  │────▶│       AI Oracle         │────▶│  Blockchain     │
-│  (Next.js/Web3) │     │  (Oasis ROFL TEE)      │     │  (Sapphire)     │
-└─────────────────┘     │  - AI Model            │     └─────────────────┘
+│  (Next.js/Web3) │     │  (Oasis ROFL TEE)       │     │  (Sapphire)     │
+└─────────────────┘     │  - AI Model             │     └─────────────────┘
          │              │  - SIWE Auth            │              │
          │              │  - Private Compute      │              │
          │              └─────────────────────────┘              │
