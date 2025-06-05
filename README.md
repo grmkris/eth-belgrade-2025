@@ -73,6 +73,35 @@ In a future where AI becomes essential for education, work, and daily life, we r
 - **Privacy-First KYC**: Verify once, stay anonymous forever
 - **Hybrid On/Off Chain**: Best of both worlds for privacy and transparency
 
+## 🚀 Live Deployments
+
+### Oasis Sapphire Testnet
+
+Our Universal Basic AI platform is live on Oasis Protocol's privacy-preserving blockchain:
+
+#### 🔗 Smart Contract (Verified)
+- **Contract Address**: [`0xA0345079D64a5EeBb317E04b7008624B58F4B5a4`](https://explorer.oasis.io/testnet/sapphire/address/0xA0345079D64a5EeBb317E04b7008624B58F4B5a4)
+- **Network**: Sapphire Testnet
+- **Status**: ✅ Verified and Deployed
+- **Features**: 
+  - User usage management
+  - Privacy-preserving state
+
+#### 🤖 AI Oracle (ROFL TEE)
+- **ROFL App ID**: [`rofl1qpw485nk7xv8qvrvqf93l08sv5uuy0wyku528yfl`](https://explorer.oasis.io/testnet/sapphire/rofl/app/rofl1qpw485nk7xv8qvrvqf93l08sv5uuy0wyku528yfl)
+- **Type**: Runtime Off-chain Logic (ROFL)
+- **Environment**: Trusted Execution Environment (TEE)
+- **Features**:
+  - SIWE authentication and verification
+  - Private compute execution
+  - OpenRouter AI model integration
+
+#### 🔐 Privacy Guarantees
+- **TEE Protection**: All AI processing happens inside secure enclave
+- **No Data Leakage**: Even node operators cannot access conversations
+- **Confidential State**: Smart contract state encrypted on Sapphire
+- **Anonymous Usage**: Zero-knowledge proof of humanity without identity exposure
+
 ## 🚀 Quick Start
 
 ### 1. Clone and Install
