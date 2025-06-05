@@ -330,7 +330,7 @@ class TEEService {
         try {
           // Try specific TDX Testbed first
           const workerpoolOrderbook = await iexec.orderbook.fetchWorkerpoolOrderbook({
-            workerpool: '0x4568effcec8ba0787e52deef10ed03267e7c95b1',
+            workerpool: 'prod-v8-bellecour.main.pools.iexec.eth',
             category: '0'
           });
           
@@ -378,7 +378,7 @@ class TEEService {
           params: JSON.stringify({
             iexec_args: "process_passport"
           }),
-          workerpool: '0x4568effcec8ba0787e52deef10ed03267e7c95b1',
+          workerpool: 'prod-v8-bellecour.main.pools.iexec.eth',
           tag: '0x0000000000000000000000000000000000000000000000000000000000000003' // TDX tag (hex for 3)
         });
         const signedRequestorder = await iexec.order.signRequestorder(requestorder);
