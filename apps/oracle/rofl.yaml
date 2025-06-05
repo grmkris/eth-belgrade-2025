@@ -17,14 +17,14 @@ artifacts:
     compose: compose.yaml
 deployments:
   default:
-    app_id: rofl1qzl7hv7jn6h4368qkvfwj8rvyfy6q7qxqc2d0nl2
+    app_id: rofl1qpw485nk7xv8qvrvqf93l08sv5uuy0wyku528yfl
     network: testnet
     paratime: sapphire
     admin: kristjan
-    oci_repository: rofl.sh/f2549623-79b6-4629-b5a5-7a86f7cc8b07:1749071756
+    oci_repository: rofl.sh/135c272d-2460-46b8-acbe-c980ab8be373:1749082391
     trust_root:
-      height: 26910030
-      hash: 26895094efdd5c94d5d914696dafc986af2da5ac0d5b26ce893af531ed8845b4
+      height: 26912637
+      hash: 7879cf1fadfe98b6230fbb298f11bef49dfb4a0fa762624b338cddafb5d9908a
     policy:
       quotes:
         pcs:
@@ -32,23 +32,23 @@ deployments:
           min_tcb_evaluation_data_number: 18
           tdx: {}
       enclaves:
-        - id: +kezfV7mlNeQbJezTBj3xGWmYQtjZIHCy2xwfGwutxQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==
-        - id: aGneuWKe09kVaYRsdlBNRPPsz6QrxWSSt6nWmS6TMosAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==
+        - id: pfffef8UZeWGSjdN1xbTtvhwuXviKgqF9eShy+bZqKgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==
+        - id: T6lJOGvQ9ykYNx0c3Qf644jDfJXuQvtQgmIRWjG2KZsAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==
       endorsements:
         - any: {}
       fees: endorsing_node
       max_expiration: 3
     secrets:
       - name: CONTRACT_ADDRESS
-        value: pGJwa1ggFhf7wiVZjeDDxDH2AmHijGvMwvVi/0+ULypjPkinokdkbmFtZVggq3MLtjyoXMRbUXP1FQc5zhkoAyhAT8Wz0yIlBS+Yl1Nlbm9uY2VPyQF6ko9aD+XDWtb6CmBfZXZhbHVlWDpNG8iIn6u3k3YZuE+TOa9XqMT6ayiERjxrtLKY/Y6QLFIH9h1+VAf8BIoTxsaR8fjKNjxVDcrJdKc/
+        value: pGJwa1gguDvHPnlVOBTiYxs4XF8mQCoU9BNBHfunPCUboh0Dqk1kbmFtZVggUgYz10/Z6KN3oGYzWOBOhUIhgpfd/FuCmCClQdK0S6Nlbm9uY2VPuPz7iEto9FFI7bG7OFjsZXZhbHVlWDrRdDSBDw0FrMCsrm34RSTX2zLB5Cam8gghrysSx5Dxkss0RL7jITnoGhFU1b+lQbqOeUM34KmxgMZB
       - name: PRIVATE_KEY
-        value: pGJwa1ggjbPO3Cm9KtYB9hAQBRToVmt/mUjPdKjkz6KIyAY2yABkbmFtZVgbCsaiHKAqEhhgn5N9X1iFomFgOeWoGl7gWHQzZW5vbmNlTxFoWnSuZVKXvPeW05pf5GV2YWx1ZVhS6VhdxvmqPh7SGQMcYAeoMKmSlrHaa6uTOHqBo9jcpxt5NEytQ8L5oNBjJKjmuO2jxzoUzk6HTsEOvknkE4ZCh6N7INeZnbhfjazN+U/DrD0R0Q==
+        value: pGJwa1ggq7eOHmxPwP2ZAYzjsgcdJtk2RQHr/hqaHSfMiEEO7QdkbmFtZVgb03+/ttCLlf6YqZEAM/UGTWEfTieh4KpWh480ZW5vbmNlT3jGzobjbWkOr4IPIDfd52V2YWx1ZVhSCcMHDnZrHrBcIc92bHFPL7z4FKkdL97jDqsMWvmp1l+YKOo+9QmwOD7tkgT/Ymx9csFvDA7D+KcQTtl76ZMzhxWz26CLa4G/iWuROl+rOuwj8A==
       - name: NETWORK_NAME
-        value: pGJwa1ggnQu1qdsouU6y4Hv9YtJyIGCYIJc/6+SF684d+zKpkU1kbmFtZVgcM7PyrlfCCxBkartl8nN9wmndPXLpXncUxGHxCGVub25jZU98+n7jEhG6nNCIAtsNrBlldmFsdWVYIIvA1XmYiyYjSoUwref7unLmNjNGT/+Y2Q+JpmhIV1x3
+        value: pGJwa1gg7i1arUvJPUkbcLc5PbZA+t/J2UOy/8kjPs6HSYa5lGNkbmFtZVgcfFLg9i1VX8dGKt6FgH9rzklaox2uxp3LfvpJT2Vub25jZU+wpCpvcvZLvMmESq5sAj1ldmFsdWVYIBWW+H4WDRlr1AiubPTkFB6yOxdxzIwLVi15vEvSIKUX
       - name: OPENROUTER_API_KEY
-        value: pGJwa1ggPdG2TmB0cI9+5owC+3pdTimcUdhLvzynczdPBIj6gQdkbmFtZVgiPupHoSFGPX23rQO262OejACF6qXGNzqS/2xKxJLGlMF27WVub25jZU8qTuVxnzYHESXhGWsUJn1ldmFsdWVYWcBq1ekyNaQ3yehFNJq58Q5a14go0psc/mVpNZ/c+ltA/qYTNeg9HAccYxbSuIe3BRsX/5HE3gj9BzZJSLLlx4plGwd4hR2Lif6nL/N0UYSNqDUjb6uBjMOX
+        value: pGJwa1ggOHEbfRegwKllM+rE4NTVUdlrHYX+s/yzezdg+X9KfARkbmFtZVgirDI7iWuwZXkwO+HgNCVsmgjBqtPVmlOYYdMGSK+z7S9SXWVub25jZU8gXus1YQ6UkZIuEVHhsSxldmFsdWVYWQzR7umHGfnkrBKxp50c7NHezkEYTfwcuaK584R8t9DdPKbOWjAP3q8ANQhM3Dw1q79+4EX/ZHkOQ2BkSZNxlwyEfYBcdKSByVQEz8oIvhMBW4nwrcVEkUlw
     machines:
       default:
         provider: oasis1qp2ens0hsp7gh23wajxa4hpetkdek3swyyulyrmz
         offer: playground_short
-        id: 00000000000000bb
+        id: 00000000000000bc

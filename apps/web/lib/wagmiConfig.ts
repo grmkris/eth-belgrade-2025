@@ -1,7 +1,7 @@
 // config/index.tsx
 
 import { WagmiAdapter } from "@reown/appkit-adapter-wagmi";
-import { baseSepolia } from "@reown/appkit/networks";
+import { baseSepolia, sapphireTestnet } from "@reown/appkit/networks";
 import { cookieStorage, createStorage } from "@wagmi/core";
 
 // Get projectId from https://cloud.reown.com
@@ -11,7 +11,7 @@ if (!projectId) {
 	throw new Error("Project ID is not defined");
 }
 
-export const networks = [baseSepolia];
+export const networks = [sapphireTestnet];
 
 export const createWagmiConfig = () => {
 	const wagmiAdapter = new WagmiAdapter({
@@ -21,9 +21,9 @@ export const createWagmiConfig = () => {
 		ssr: true,
 		projectId,
 		networks,
-		chains: [baseSepolia],
+		chains: [sapphireTestnet],
 	});
-	const defaultNetwork = baseSepolia; //networks[0];
+	const defaultNetwork = sapphireTestnet; //networks[0];
 	return {
 		wagmiAdapter,
 		defaultNetwork,

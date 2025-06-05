@@ -1,7 +1,7 @@
 // context/index.tsx
 "use client";
 
-import { baseSepolia } from "@reown/appkit/networks";
+import { sapphireTestnet } from "@reown/appkit/networks";
 import { createAppKit } from "@reown/appkit/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import React, { type ReactNode } from "react";
@@ -29,8 +29,8 @@ const { wagmiAdapter } = createWagmiConfig();
 createAppKit({
 	adapters: [wagmiAdapter],
 	projectId,
-	networks: [baseSepolia],
-	defaultNetwork: baseSepolia,
+	networks: [sapphireTestnet],
+	defaultNetwork: sapphireTestnet,
 	metadata: metadata,
 	features: {
 		analytics: true, // Optional - defaults to your Cloud configuration

@@ -1,10 +1,17 @@
 "use client";
 
 import { motion, AnimatePresence } from "motion/react";
-import { SendIcon, BotIcon, UserIcon } from "lucide-react";
+import { SendIcon, BotIcon, UserIcon, StopCircleIcon, RefreshCwIcon, SparklesIcon, HeartIcon, BrainIcon, UsersIcon, TrendingUpIcon, TargetIcon } from "lucide-react";
 import { Button } from "@workspace/ui/components/button";
 import { Card, CardContent } from "@workspace/ui/components/card";
 import { Input } from "@workspace/ui/components/input";
+import { useSignMessage, useAccount } from "wagmi";
+import { useChat } from "@ai-sdk/react";
+import { createSiweMessage, generateSiweNonce } from "viem/siwe";
+import { useState, useCallback } from "react";
+import { sapphireTestnet } from "viem/chains";
+import Markdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 const messageVariants = {
   hidden: { opacity: 0, y: 20, scale: 0.95 },
@@ -47,60 +54,294 @@ const dotVariants = {
   },
 };
 
-export const Chat = () => {
-  const messages = [
-    {
-      id: 1,
-      type: "assistant",
-      content: "Hello! I'm here to listen and support you. How are you feeling today?",
-      timestamp: "2:30 PM",
-    },
-    {
-      id: 2,
-      type: "user",
-      content: "Hi... I've been having a really tough week. Work has been overwhelming and I'm feeling pretty anxious.",
-      timestamp: "2:31 PM",
-    },
-    {
-      id: 3,
-      type: "assistant",
-      content: "I'm sorry to hear you're going through a difficult time. It sounds like work stress is really affecting you. Would you like to talk about what specifically at work is making you feel overwhelmed?",
-      timestamp: "2:31 PM",
-    },
-    {
-      id: 4,
-      type: "user",
-      content: "It's just so much pressure. My manager keeps giving me more projects and I feel like I can't keep up. I'm worried I'm going to mess something up.",
-      timestamp: "2:33 PM",
-    },
-    {
-      id: 5,
-      type: "assistant",
-      content: "That pressure sounds really intense, and it's completely understandable that you'd feel anxious about it. Feeling like you can't keep up when responsibilities keep piling on is exhausting. Have you been able to communicate with your manager about your current workload?",
-      timestamp: "2:34 PM",
-    },
-  ];
+const examplePrompts = [
+  {
+    icon: HeartIcon,
+    category: "Emotional Support",
+    prompts: [
+      "I'm feeling overwhelmed and don't know how to cope",
+      "I'm struggling with anxiety about my future"
+    ]
+  },
+  {
+    icon: BrainIcon,
+    category: "Mental Health",
+    prompts: [
+      "My negative thoughts are controlling my life",
+      "I'm having trouble sleeping due to stress"
+    ]
+  },
+  {
+    icon: UsersIcon,
+    category: "Relationships",
+    prompts: [
+      "I'm having difficulties in my relationship",
+      "I don't know how to set healthy boundaries"
+    ]
+  }
+];
 
-  const isTyping = true;
+export const Chat: React.FC = () => {
+  const { signMessageAsync } = useSignMessage();
+  const { address, isConnected } = useAccount();
+  const [isAuthenticating, setIsAuthenticating] = useState(false);
+  const [input, setInput] = useState("");
+
+  // Create SIWE authentication
+  const authenticateWithSiwe = useCallback(async () => {
+    if (!address || !isConnected) {
+      console.error("Wallet not connected");
+      throw new Error("Wallet not connected");
+    }
+
+    setIsAuthenticating(true);
+    try {
+      const siweMessage = createSiweMessage({
+        address,
+        chainId: sapphireTestnet.id,
+        domain: window.location.host,
+        nonce: generateSiweNonce(),
+        uri: window.location.origin,
+        version: '1',
+        statement: 'Sign in to your AI Support Buddy',
+        issuedAt: new Date(),
+        expirationTime: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
+      });
+
+      const signature = await signMessageAsync({
+        message: siweMessage,
+      });
+      return {
+        message: siweMessage,
+        signature,
+      };
+    } catch (error) {
+      console.error("SIWE authentication failed:", error);
+      throw new Error("SIWE authentication failed");
+    } finally {
+      setIsAuthenticating(false);
+    }
+  }, [address, isConnected, signMessageAsync]);
+
+  const {
+    messages,
+    append,
+    status,
+    error,
+    stop,
+    reload,
+    setMessages,
+  } = useChat({
+    api: 'http://localhost:3001/chat',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    onError: (error) => {
+      console.error('Chat error:', error);
+    },
+    onFinish: (message, { usage, finishReason }) => {
+      console.log('Message finished:', { message, usage, finishReason });
+    },
+    onResponse: (response) => {
+      console.log('Response received:', response);
+    },
+  });
+
+  const handleDelete = useCallback((id: string) => {
+    setMessages(messages.filter(message => message.id !== id));
+  }, [messages, setMessages]);
+
+  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setInput(e.target.value);
+  }, []);
+
+  const onSubmit = useCallback(async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    
+    if (!input.trim()) {
+      return;
+    }
+
+    // If not authenticated, authenticate first
+    const siweData = await authenticateWithSiwe();
+
+    const messageContent = input.trim();
+    setInput(""); // Clear input immediately
+
+    console.log("siweData", messageContent);
+
+    await append({
+      role: 'user',
+      content: messageContent,
+    }, {
+      body: {
+        siweMessage: siweData?.message,
+        signature: siweData?.signature,
+      },
+    });
+  }, [append, input, authenticateWithSiwe]);
+
+  const handleExampleClick = useCallback(async (prompt: string) => {
+    setInput(prompt);
+    
+    // Authenticate and submit immediately
+    try {
+      const siweData = await authenticateWithSiwe();
+      
+      await append({
+        role: 'user',
+        content: prompt,
+      }, {
+        body: {
+          siweMessage: siweData?.message,
+          signature: siweData?.signature,
+        },
+      });
+    } catch (error) {
+      console.error("Failed to submit example prompt:", error);
+    }
+  }, [append, authenticateWithSiwe]);
+
+  // Show wallet connection prompt if not connected
+  if (!isConnected) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 flex items-center justify-center p-4">
+        <Card className="p-6 sm:p-8 text-center max-w-md w-full backdrop-blur-sm bg-white/90 shadow-xl">
+          <CardContent>
+            <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
+              <HeartIcon className="w-8 h-8 text-white" />
+            </div>
+            <h2 className="text-2xl sm:text-3xl font-bold mb-2 bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+              Your Safe Space
+            </h2>
+            <p className="text-gray-600 mb-6 text-sm sm:text-base">
+              Connect your wallet to begin your journey with a compassionate AI companion who's here to listen and support you.
+            </p>
+            <div className="space-y-2 text-left mb-6 text-sm">
+              <div className="flex items-center gap-2 text-gray-600">
+                <SparklesIcon className="w-4 h-4 text-purple-500" />
+                <span>100% Private & Confidential</span>
+              </div>
+              <div className="flex items-center gap-2 text-gray-600">
+                <HeartIcon className="w-4 h-4 text-pink-500" />
+                <span>Judgment-free support 24/7</span>
+              </div>
+              <div className="flex items-center gap-2 text-gray-600">
+                <BrainIcon className="w-4 h-4 text-blue-500" />
+                <span>Guided self-discovery</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
-    <div className="h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex flex-col">
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 flex flex-col">
       {/* Header */}
-      <div className="border-b bg-white/80 backdrop-blur-sm p-4 shadow-sm">
-        <div className="container mx-auto flex items-center gap-3">
-          <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
-            <BotIcon className="w-6 h-6 text-white" />
+      <div className="border-b bg-white/80 backdrop-blur-sm p-3 sm:p-4 shadow-sm sticky top-0 z-10">
+        <div className="container mx-auto flex items-center justify-between max-w-4xl px-4">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center shadow-md">
+              <HeartIcon className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+            </div>
+            <div>
+              <h1 className="font-semibold text-gray-800 text-sm sm:text-base">Your Support Companion</h1>
+              <p className="text-xs sm:text-sm text-gray-600">
+                {address?.slice(0, 6)}...{address?.slice(-4)}
+              </p>
+            </div>
           </div>
-          <div>
-            <h1 className="font-semibold text-gray-800">AI Support Companion</h1>
-            <p className="text-sm text-gray-600">Always here to listen</p>
+          
+          {/* Status indicator */}
+          <div className="flex items-center gap-2">
+            {status === 'streaming' && (
+              <div className="flex items-center gap-2 text-purple-600">
+                <div className="animate-pulse w-2 h-2 bg-purple-600 rounded-full"></div>
+                <span className="text-xs sm:text-sm">Listening...</span>
+              </div>
+            )}
+            {status === 'submitted' && (
+              <div className="flex items-center gap-2 text-pink-600">
+                <div className="animate-spin w-3 h-3 sm:w-4 sm:h-4 border-2 border-pink-600 border-t-transparent rounded-full"></div>
+                <span className="text-xs sm:text-sm">Connecting...</span>
+              </div>
+            )}
+            {isAuthenticating && (
+              <div className="flex items-center gap-2 text-purple-600">
+                <div className="animate-spin w-3 h-3 sm:w-4 sm:h-4 border-2 border-purple-600 border-t-transparent rounded-full"></div>
+                <span className="text-xs sm:text-sm">Securing...</span>
+              </div>
+            )}
           </div>
         </div>
       </div>
 
       {/* Chat Messages */}
       <div className="flex-1 overflow-hidden">
-        <div className="h-full overflow-y-auto p-4 space-y-4 container mx-auto max-w-4xl">
+        <div className="h-full overflow-y-auto p-4 space-y-4 container mx-auto max-w-4xl pb-24">
+          {messages.length === 0 && (
+            <div className="py-4 sm:py-8">
+              <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
+                className="text-center mb-6"
+              >
+                <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center mx-auto mb-3 shadow-xl">
+                  <HeartIcon className="w-8 h-8 sm:w-10 sm:h-10 text-white" />
+                </div>
+                <h3 className="text-lg sm:text-xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-2">
+                  Welcome to Your Safe Space
+                </h3>
+                <p className="text-gray-600 text-xs sm:text-sm max-w-md mx-auto px-4">
+                  I'm here to listen and guide you. Share what's on your mind.
+                </p>
+              </motion.div>
+
+              {/* Example Prompts - Compact for mobile */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.3, duration: 0.5 }}
+                className="space-y-3"
+              >
+                <p className="text-center text-xs sm:text-sm text-gray-500 mb-3">Quick start:</p>
+                <div className="space-y-3">
+                  {examplePrompts.map((category, idx) => (
+                    <motion.div
+                      key={category.category}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.4 + idx * 0.1 }}
+                      className="bg-white/80 backdrop-blur-sm rounded-xl p-3 sm:p-4 shadow-md"
+                    >
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="w-8 h-8 bg-gradient-to-r from-purple-100 to-pink-100 rounded-full flex items-center justify-center">
+                          <category.icon className="w-4 h-4 text-purple-600" />
+                        </div>
+                        <h4 className="font-semibold text-gray-800 text-sm">{category.category}</h4>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        {category.prompts.map((prompt, promptIdx) => (
+                          <button
+                            key={promptIdx}
+                            onClick={() => handleExampleClick(prompt)}
+                            disabled={status === 'streaming' || status === 'submitted' || isAuthenticating}
+                            className="text-left w-full p-2.5 rounded-lg bg-gradient-to-r from-purple-50 to-pink-50 hover:from-purple-100 hover:to-pink-100 transition-all duration-200 text-xs sm:text-sm text-gray-700 hover:text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            "{prompt}"
+                          </button>
+                        ))}
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              </motion.div>
+            </div>
+          )}
+
           <AnimatePresence>
             {messages.map((message, index) => (
               <motion.div
@@ -110,40 +351,66 @@ export const Chat = () => {
                 animate="visible"
                 exit="exit"
                 custom={index}
-                className={`flex ${message.type === "user" ? "justify-end" : "justify-start"}`}
+                className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
               >
-                <div className={`flex gap-3 max-w-[80%] ${message.type === "user" ? "flex-row-reverse" : "flex-row"}`}>
+                <div className={`flex gap-2 sm:gap-3 max-w-[90%] sm:max-w-[80%] ${message.role === "user" ? "flex-row-reverse" : "flex-row"}`}>
                   {/* Avatar */}
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
-                    message.type === "user" 
-                      ? "bg-gradient-to-r from-purple-500 to-blue-600" 
-                      : "bg-gradient-to-r from-blue-500 to-purple-600"
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 shadow-md ${
+                    message.role === "user" 
+                      ? "bg-gradient-to-r from-blue-500 to-purple-600" 
+                      : "bg-gradient-to-r from-purple-500 to-pink-500"
                   }`}>
-                    {message.type === "user" ? (
+                    {message.role === "user" ? (
                       <UserIcon className="w-4 h-4 text-white" />
                     ) : (
-                      <BotIcon className="w-4 h-4 text-white" />
+                      <HeartIcon className="w-4 h-4 text-white" />
                     )}
                   </div>
 
                   {/* Message */}
-                  <div className={`flex flex-col ${message.type === "user" ? "items-end" : "items-start"}`}>
-                    <Card className={`shadow-md border-0 ${
-                      message.type === "user" 
-                        ? "bg-gradient-to-r from-purple-500 to-blue-600 text-white" 
-                        : "bg-white"
+                  <div className={`flex flex-col ${message.role === "user" ? "items-end" : "items-start"}`}>
+                    <Card className={`shadow-lg border-0 ${
+                      message.role === "user" 
+                        ? "bg-gradient-to-r from-blue-500 to-purple-600 text-white" 
+                        : "bg-white/90 backdrop-blur-sm"
                     }`}>
-                      <CardContent className="p-4">
-                        <p className={`text-sm leading-relaxed ${
-                          message.type === "user" ? "text-white" : "text-gray-700"
+                      <CardContent className="p-3 sm:p-4">
+                        <div className={`text-sm sm:text-base leading-relaxed ${
+                          message.role === "user" ? "text-white" : "text-gray-700"
                         }`}>
-                          {message.content}
-                        </p>
+                          {message.role === "assistant" ? (
+                            <div className="prose prose-sm max-w-none">
+                              <Markdown remarkPlugins={[remarkGfm]}>
+                                {message.parts?.map((part) => {
+                                  if (part.type === 'text') {
+                                    return part.text;
+                                  }
+                                  return '';
+                                }).join('') || message.content}
+                              </Markdown>
+                            </div>
+                          ) : (
+                            message.parts?.map((part, partIndex) => {
+                              if (part.type === 'text') {
+                                return <span key={partIndex}>{part.text}</span>;
+                              }
+                              return null;
+                            }) || message.content
+                          )}
+                        </div>
                       </CardContent>
                     </Card>
-                    <span className="text-xs text-gray-500 mt-1 px-2">
-                      {message.timestamp}
-                    </span>
+                    <div className="flex items-center gap-2 mt-1 px-2">
+                      <span className="text-xs text-gray-500">
+                        {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                      <button
+                        onClick={() => handleDelete(message.id)}
+                        className="text-xs text-gray-400 hover:text-red-500 transition-colors"
+                      >
+                        Delete
+                      </button>
+                    </div>
                   </div>
                 </div>
               </motion.div>
@@ -152,7 +419,7 @@ export const Chat = () => {
 
           {/* Typing Indicator */}
           <AnimatePresence>
-            {isTyping && (
+            {status === 'streaming' && (
               <motion.div
                 variants={typingVariants}
                 initial="hidden"
@@ -160,12 +427,12 @@ export const Chat = () => {
                 exit="hidden"
                 className="flex justify-start"
               >
-                <div className="flex gap-3 max-w-[80%]">
-                  <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center shrink-0">
-                    <BotIcon className="w-4 h-4 text-white" />
+                <div className="flex gap-2 sm:gap-3 max-w-[90%] sm:max-w-[80%]">
+                  <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center shrink-0 shadow-md">
+                    <HeartIcon className="w-4 h-4 text-white" />
                   </div>
-                  <Card className="shadow-md border-0 bg-white">
-                    <CardContent className="p-4">
+                  <Card className="shadow-lg border-0 bg-white/90 backdrop-blur-sm">
+                    <CardContent className="p-3 sm:p-4">
                       <div className="flex space-x-1">
                         {[0, 1, 2].map((i) => (
                           <motion.div
@@ -173,7 +440,7 @@ export const Chat = () => {
                             variants={dotVariants}
                             animate="animate"
                             style={{ animationDelay: `${i * 0.2}s` }}
-                            className="w-2 h-2 bg-gray-400 rounded-full"
+                            className="w-2 h-2 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full"
                           />
                         ))}
                       </div>
@@ -186,25 +453,74 @@ export const Chat = () => {
         </div>
       </div>
 
-      {/* Input Area */}
-      <div className="border-t bg-white/80 backdrop-blur-sm p-4 shadow-lg">
-        <div className="container mx-auto max-w-4xl">
-          <div className="flex gap-3 items-end">
+      {/* Error Display */}
+      {error && (
+        <div className="border-t bg-red-50/80 backdrop-blur-sm p-3 sm:p-4">
+          <div className="container mx-auto max-w-4xl px-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-red-600">
+                <span className="text-xs sm:text-sm">Something went wrong. Let's try again.</span>
+              </div>
+              <Button
+                onClick={() => reload()}
+                variant="outline"
+                size="sm"
+                className="text-red-600 border-red-600 hover:bg-red-50"
+              >
+                <RefreshCwIcon className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+                Retry
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Input Area - Fixed at bottom */}
+      <div className="fixed bottom-0 left-0 right-0 border-t bg-white/90 backdrop-blur-md p-3 sm:p-4 shadow-2xl">
+        <div className="container mx-auto max-w-4xl px-4">
+          <form onSubmit={onSubmit} className="flex gap-2 sm:gap-3 items-end">
             <div className="flex-1">
               <Input
+                value={input}
+                onChange={handleInputChange}
                 placeholder="Share what's on your mind..."
-                className="resize-none border-2 border-gray-200 focus:border-blue-400 rounded-2xl px-4 py-3 text-base"
+                className="resize-none border-2 border-purple-200 focus:border-purple-400 rounded-2xl px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base bg-white/90 backdrop-blur-sm"
+                disabled={status === 'streaming' || status === 'submitted' || isAuthenticating}
               />
             </div>
-            <Button
-              size="lg"
-              className="rounded-2xl px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 shadow-lg hover:shadow-xl transition-all"
-            >
-              <SendIcon className="w-5 h-5" />
-            </Button>
-          </div>
+            
+            {/* Control Buttons */}
+            <div className="flex gap-2">
+              {(status === 'streaming' || status === 'submitted') && (
+                <Button
+                  type="button"
+                  onClick={stop}
+                  variant="outline"
+                  size="icon"
+                  className="rounded-full w-9 h-9 sm:w-10 sm:h-10 border-purple-300"
+                >
+                  <StopCircleIcon className="w-4 h-4 sm:w-5 sm:h-5" />
+                </Button>
+              )}
+              
+              <Button
+                type="submit"
+                size="icon"
+                disabled={!input.trim() || status === 'streaming' || status === 'submitted' || isAuthenticating}
+                className="rounded-full w-9 h-9 sm:w-10 sm:h-10 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 shadow-lg hover:shadow-xl transition-all"
+              >
+                {isAuthenticating ? (
+                  <div className="animate-spin w-4 h-4 sm:w-5 sm:h-5 border-2 border-white border-t-transparent rounded-full" />
+                ) : (
+                  <SendIcon className="w-4 h-4 sm:w-5 sm:h-5" />
+                )}
+              </Button>
+            </div>
+          </form>
+          
           <p className="text-xs text-gray-500 mt-2 text-center">
-            Your conversations are private and secure. Press Enter or click send to share.
+            <SparklesIcon className="w-3 h-3 inline mr-1" />
+            {"Your safe space • Private & secure • Here for you 24/7"}
           </p>
         </div>
       </div>
