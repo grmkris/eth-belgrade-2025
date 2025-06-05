@@ -189,7 +189,7 @@ export const Chat: React.FC = () => {
     reload,
     setMessages,
   } = useChat({
-    api: 'http://localhost:3001/chat',
+    api: 'https://2df6-178-220-173-118.ngrok-free.app/chat',
     headers: {
       'Content-Type': 'application/json',
     },
