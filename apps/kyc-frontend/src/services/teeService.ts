@@ -278,7 +278,7 @@ class TEEService {
       // Step 2: Submit to deployed iApp for TEE processing
       console.log('🚀 Submitting to deployed iApp for TEE processing...');
       
-      const DEPLOYED_IAPP_ADDRESS = '0x77E4126768A17585170f0Fe190f052327070babE';
+      const DEPLOYED_IAPP_ADDRESS = '0x7e61d3de5a9ff9de9d6359835a77fbaf4a0dea49';
       const IAPP_WALLET_ADDRESS = '0xbb1E86387b628441b40B2cB145AEb60B11173B0B';
       
       // Step 1.5: Grant access to the iApp wallet for CLI testing
@@ -302,104 +302,25 @@ class TEEService {
       }
       
       try {
-        console.log(`📡 Creating iExec task with proper parameters...`);
+        console.log(`📡 Processing protected data with DataProtector...`);
         
-        // Initialize raw iExec SDK for more control over task parameters
-        const provider = walletService.getProvider();
-        const iexec = new IExec({
-          ethProvider: provider,
-        });
-        
-        // Replicate CLI 'iapp run' functionality - create orders directly
-        console.log('🚀 Creating direct orders (equivalent to CLI iapp run)...');
-        
-        // Create and sign app order (we own this app)
-        const apporder = await iexec.order.createApporder({
+        // Use DataProtector's built-in processing method for protected data
+        // This handles all the encryption/decryption and order management internally
+        const processingResult = await dataProtector.core.processProtectedData({
+          protectedData: protectedData.address,
           app: DEPLOYED_IAPP_ADDRESS,
-          appprice: '0',
-          volume: '1',
-          tag: '0x0000000000000000000000000000000000000000000000000000000000000003' // TDX tag (hex for 3)
-        });
-        const signedApporder = await iexec.order.signApporder(apporder);
-        console.log('✅ App order created and signed');
-
-        // Fetch workerpool orders from marketplace (we don't own the workerpool)
-        console.log('📋 Fetching TDX workerpool orders from marketplace...');
-        
-        let workerpoolOrder;
-        try {
-          // Try specific TDX Testbed first
-          const workerpoolOrderbook = await iexec.orderbook.fetchWorkerpoolOrderbook({
-            workerpool: 'prod-v8-bellecour.main.pools.iexec.eth',
-            category: '0'
-          });
-          
-          if (workerpoolOrderbook.orders && workerpoolOrderbook.orders.length > 0) {
-            workerpoolOrder = workerpoolOrderbook.orders[0].order;
-            console.log('✅ Found specific TDX workerpool order');
-          }
-        } catch (specificError) {
-          console.log('⚠️ Specific TDX workerpool query failed:', specificError);
-        }
-        
-        // Fallback: Try broader category 0 search for any TDX-compatible workerpool
-        if (!workerpoolOrder) {
-          console.log('📋 Searching for any TDX-compatible workerpool orders...');
-          try {
-            const broadOrderbook = await iexec.orderbook.fetchWorkerpoolOrderbook({
-              category: '0'
-            });
-            
-            // Filter for orders with TDX tag
-            const tdxOrders = broadOrderbook.orders?.filter(orderInfo => 
-              orderInfo.order.tag === '0x0000000000000000000000000000000000000000000000000000000000000003'
-            );
-            
-            if (tdxOrders && tdxOrders.length > 0) {
-              workerpoolOrder = tdxOrders[0].order;
-              console.log('✅ Found TDX-compatible workerpool:', workerpoolOrder.workerpool);
-            }
-          } catch (broadError) {
-            console.log('⚠️ Broad workerpool search failed:', broadError);
-          }
-        }
-        
-        if (!workerpoolOrder) {
-          throw new Error(`No TDX workerpool orders available. Please use CLI: iapp run ${DEPLOYED_IAPP_ADDRESS} --protectedData ${protectedData.address}`);
-        }
-        
-        console.log('✅ Using workerpool order:', workerpoolOrder.workerpool);
-
-        // Create and sign request order with protected data
-        const requestorder = await iexec.order.createRequestorder({
-          app: DEPLOYED_IAPP_ADDRESS,
-          dataset: protectedData.address,
-          category: '0',
-          params: JSON.stringify({
-            iexec_args: "process_passport"
-          }),
-          workerpool: 'prod-v8-bellecour.main.pools.iexec.eth',
-          tag: '0x0000000000000000000000000000000000000000000000000000000000000003' // TDX tag (hex for 3)
-        });
-        const signedRequestorder = await iexec.order.signRequestorder(requestorder);
-        console.log('✅ Request order created and signed');
-
-        console.log('📡 Matching orders to create deal (like CLI iapp run)...');
-        
-        const { dealid } = await iexec.order.matchOrders({
-          apporder: signedApporder,
-          workerpoolorder: workerpoolOrder,
-          requestorder: signedRequestorder
+          maxPrice: 0,
+          args: "process_passport",
+          inputFiles: [], // Files are already embedded in protected data
+          workerpool: 'prod-v8-bellecour.main.pools.iexec.eth' // TDX workerpool for hackathon
         });
         
-        const taskid = await iexec.deal.computeTaskId(dealid, '0');
-        
-        console.log('✅ TEE task created successfully!');
-        console.log('Task ID:', taskid);
-        console.log('Deal ID:', dealid);
+        console.log('✅ DataProtector processing initiated successfully!');
+        console.log('Task ID:', processingResult.taskId);
+        console.log('Deal ID:', processingResult.dealId);
         
         return {
-          taskId: taskid,
+          taskId: processingResult.taskId,
           protectedDataAddress: protectedData.address,
           status: 'submitted',
           timestamp: Date.now(),
