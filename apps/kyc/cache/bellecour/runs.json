@@ -1,0 +1,16 @@
+[
+  {
+    "iAppAddress": "0x75b462c8BD37455750E5f8ce17AC54dF8736E76c",
+    "dealid": "0x9d5bcfb1540ad902312d279b68d961c717fd0bda3ca799a0392f11e509d831ee",
+    "taskid": "0x9b65b2125e7135290cf10adde9c5774c2c8394e186c62f272cd0e1512a2ce569",
+    "txHash": "0x1cccf596e6dbb3397dfe6d750cb8cfa1984222a7cc0690c54d9cf73f8ea10e23",
+    "date": "2025-06-04T23:46:25.985Z"
+  },
+  {
+    "iAppAddress": "0x75b462c8BD37455750E5f8ce17AC54dF8736E76c",
+    "dealid": "0x444114eb0fc47245e0fda7ccd462b2121368abf7108c92ee6141f8cb74d27079",
+    "taskid": "0x0622f78d1f1629c38b34e4f2f1b7770392bacf1b231fea862632963b4112b2b6",
+    "txHash": "0xa1c845e11a8b0fcdc24c65d97011d42fe20b325f211e8bc0ed01bebf2abd1618",
+    "date": "2025-06-04T23:46:06.689Z"
+  }
+]

@@ -1,5 +1,6 @@
 import { KYCResult } from '../types';
 import { walletService } from './walletService';
+import { teeService } from './teeService';
 
 export interface PollingResult {
   result: KYCResult | null;
@@ -16,9 +17,6 @@ class ResultService {
     try {
       console.log('Result Service: Polling for results of task:', taskId);
       
-      // Simulate polling delay (in real implementation, this would poll iExec)
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
       // Get the current wallet address
       const walletState = walletService.getState();
       if (!walletState.address) {
@@ -29,28 +27,63 @@ class ResultService {
         };
       }
 
-      // For POC demo, return hardcoded passport data
-      // In a real implementation, this would:
-      // 1. Use iExec SDK to check task status
-      // 2. Retrieve results when task is completed
-      // 3. Parse the OCR results from the TEE processing
-      // 4. Return the extracted passport data
-      
-      const mockResult: KYCResult = {
-        wallet: walletState.address,
-        passport_number: 'L898902C',
-        country: 'DEU',
-        verified: true,
-        taskId,
-        timestamp: Date.now(),
-      };
+      // Check if this is a real iExec task ID (starts with 0x) or a mock task
+      if (taskId.startsWith('0x') && taskId.length === 66) {
+        console.log('🔍 Checking real iExec task status...');
+        
+        try {
+          // Try to get results from the real TEE processing
+          const teeResults = await teeService.getProcessingResults(taskId);
+          
+          console.log('✅ Retrieved real TEE results:', teeResults);
+          
+          // Parse the OCR results from TEE
+          const result: KYCResult = {
+            wallet: walletState.address,
+            passport_number: teeResults.passport_number || 'Unknown',
+            country: teeResults.country || 'Unknown',
+            verified: teeResults.verified || false,
+            taskId,
+            timestamp: teeResults.timestamp || Date.now(),
+          };
 
-      console.log('Result Service: KYC verification completed:', mockResult);
+          return {
+            result,
+            isComplete: true,
+          };
+          
+        } catch (teeError) {
+          console.warn('⚠️ Real TEE results not ready yet, task may still be processing:', teeError);
+          
+          // Task is still processing, return not complete
+          return {
+            result: null,
+            isComplete: false,
+          };
+        }
+      } else {
+        // Fallback for mock tasks or manual testing
+        console.log('📝 Using mock results for demo/testing task:', taskId);
+        
+        // Simulate polling delay for demo
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        
+        const mockResult: KYCResult = {
+          wallet: walletState.address,
+          passport_number: 'L898902C3',
+          country: 'DEU',
+          verified: true,
+          taskId,
+          timestamp: Date.now(),
+        };
 
-      return {
-        result: mockResult,
-        isComplete: true,
-      };
+        console.log('Result Service: Mock KYC verification completed:', mockResult);
+
+        return {
+          result: mockResult,
+          isComplete: true,
+        };
+      }
       
     } catch (error) {
       console.error('Error polling for results:', error);
@@ -64,22 +97,35 @@ class ResultService {
 
   /**
    * Check the status of a TEE task
-   * For POC, this is simplified
    */
   async checkTaskStatus(taskId: string): Promise<'pending' | 'processing' | 'completed' | 'failed'> {
     try {
-      // Simulate status check
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      // For POC, assume all tasks complete successfully after a delay
-      const age = Date.now() - parseInt(taskId.split('_')[2] || '0');
-      
-      if (age < 1000) {
-        return 'pending';
-      } else if (age < 3000) {
-        return 'processing';
+      // Check if this is a real iExec task ID
+      if (taskId.startsWith('0x') && taskId.length === 66) {
+        console.log('🔍 Checking real iExec task status for:', taskId);
+        
+        try {
+          // Try to get results - if successful, task is completed
+          await teeService.getProcessingResults(taskId);
+          return 'completed';
+        } catch (error) {
+          // If results not available, task is still processing
+          console.log('Task still processing or pending...');
+          return 'processing';
+        }
       } else {
-        return 'completed';
+        // Mock task status for demo/testing
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        const age = Date.now() - parseInt(taskId.split('_')[1] || '0');
+        
+        if (age < 1000) {
+          return 'pending';
+        } else if (age < 3000) {
+          return 'processing';
+        } else {
+          return 'completed';
+        }
       }
       
     } catch (error) {
