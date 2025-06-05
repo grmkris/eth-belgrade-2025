@@ -1,5 +1,11 @@
 [
   {
+    "sconifiedImage": "deinjoni/kyc:0.0.7-tdx-61373f28ab4e",
+    "appContractAddress": "0xe74746cC555Af4B4bF067b381249A7A711E2a2AA",
+    "owner": "0xbb1E86387b628441b40B2cB145AEb60B11173B0B",
+    "date": "2025-06-05T05:08:15.773Z"
+  },
+  {
     "sconifiedImage": "deinjoni/kyc:0.0.4-tdx-c8ed6a1d6cd6",
     "appContractAddress": "0x7E61D3De5A9FF9de9D6359835A77fbAf4A0Dea49",
     "owner": "0xbb1E86387b628441b40B2cB145AEb60B11173B0B",

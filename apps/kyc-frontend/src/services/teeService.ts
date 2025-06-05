@@ -1,4 +1,4 @@
-import { IExecDataProtector } from '@iexec/dataprotector';
+import { IExecDataProtector, IExecDataProtectorCore } from '@iexec/dataprotector';
 import { IExec } from 'iexec';
 import { walletService } from './walletService';
 
@@ -10,14 +10,14 @@ export interface TEESubmissionResult {
 }
 
 class TEEService {
-  private dataProtector: IExecDataProtector | null = null;
+  private dataProtectorCore: IExecDataProtectorCore | null = null;
 
   /**
    * Initialize the iExec DataProtector with the current wallet provider
    */
-  private async initialize(): Promise<IExecDataProtector> {
-    if (this.dataProtector) {
-      return this.dataProtector;
+  private async initialize(): Promise<IExecDataProtectorCore> {
+    if (this.dataProtectorCore) {
+      return this.dataProtectorCore;
     }
 
     const provider = walletService.getProvider();
@@ -37,7 +37,7 @@ class TEEService {
     try {
       // Initialize iExec DataProtector with the ethers.js provider and SMS URL
       console.log('Creating IExecDataProtector instance...');
-      this.dataProtector = new IExecDataProtector(provider, {
+      this.dataProtectorCore = new IExecDataProtectorCore(provider, {
         iexecOptions: {
           smsURL: 'https://sms.labs.iex.ec/',
         },
@@ -58,7 +58,7 @@ class TEEService {
           await this.switchToBellecour();
           
           // Re-initialize after network switch
-          this.dataProtector = null;
+          this.dataProtectorCore = null;
           return this.initialize();
         } catch (switchError) {
           console.error('Failed to switch network:', switchError);
@@ -71,7 +71,7 @@ class TEEService {
         }
       }
       
-      return this.dataProtector;
+      return this.dataProtectorCore;
     } catch (error) {
       console.error('Failed to initialize iExec DataProtector:', error);
       throw new Error('Failed to initialize TEE service. Please try again.');
@@ -235,7 +235,7 @@ class TEEService {
 
       // Step 1: Protect the passport data using DataProtector with flattened structure
       console.log('🔐 Calling DataProtector.protectData() - MetaMask should prompt for signature...');
-      const protectedData = await dataProtector.core.protectData({
+      const protectedData = await this.dataProtectorCore.protectData({
         data: dataToProtect,
         name: `KYC-Passport-${Date.now()}`
       });
@@ -245,7 +245,7 @@ class TEEService {
       // Step 2: Submit to deployed iApp for TEE processing
       console.log('🚀 Submitting to deployed iApp for TEE processing...');
       
-      const DEPLOYED_IAPP_ADDRESS = '0x7e61d3de5a9ff9de9d6359835a77fbaf4a0dea49';
+      const DEPLOYED_IAPP_ADDRESS = '0xe74746cC555Af4B4bF067b381249A7A711E2a2AA';
       const IAPP_WALLET_ADDRESS = '0xbb1E86387b628441b40B2cB145AEb60B11173B0B';
       
       // Step 1.5: Grant access to the iApp wallet for CLI testing
@@ -255,7 +255,7 @@ class TEEService {
         console.log('- Authorized app:', DEPLOYED_IAPP_ADDRESS);
         console.log('- Authorized user:', IAPP_WALLET_ADDRESS);
         
-        const grantResult = await dataProtector.core.grantAccess({
+        const grantResult = await this.dataProtectorCore.grantAccess({
           protectedData: protectedData.address,
           authorizedApp: DEPLOYED_IAPP_ADDRESS,
           authorizedUser: IAPP_WALLET_ADDRESS,
@@ -273,12 +273,10 @@ class TEEService {
         
         // Use DataProtector's built-in processing method for protected data
         // This handles all the encryption/decryption and order management internally
-        const processingResult = await dataProtector.core.processProtectedData({
+        const processingResult = await this.dataProtectorCore.processProtectedData({
           protectedData: protectedData.address,
           app: DEPLOYED_IAPP_ADDRESS,
-          maxPrice: 0,
           args: "process_passport",
-          inputFiles: [], // Files are already embedded in protected data
           workerpool: 'tdx-labs.pools.iexec.eth' // TDX workerpool as per hackathon docs
         });
         
@@ -337,7 +335,7 @@ class TEEService {
       console.log('Retrieving results for task:', taskId);
       
       // Get the result from the completed task
-      const result = await dataProtector.core.getResultFromCompletedTask({
+      const result = await this.dataProtectorCore.getResultFromCompletedTask({
         taskId: taskId
       });
 
@@ -373,7 +371,7 @@ class TEEService {
    * Reset the service (useful for wallet disconnection)
    */
   reset(): void {
-    this.dataProtector = null;
+    this.dataProtectorCore = null;
   }
 }
 
